@@ -70,72 +70,7 @@ async def start_command(client: Client, message: Message):
     FILE_AUTO_DELETE = await db.get_del_timer()
     text = message.text
 
-    if len(text) > 7:
-        verify_status = await db.get_verify_status(id)
-
-        # Token expiry
-        if (SHORTLINK_URL or SHORTLINK_API):
-            if verify_status['is_verified'] and VERIFY_EXPIRE < (time.time() - verify_status['verified_time']):
-                await db.update_verify_status(user_id, is_verified=False, verify_token="", original_start="")
-
-        # === VERIFY TOKEN (User came back after shortlink) ===
-        if message.text.startswith("/start verify_"):
-            _, token = message.text.split("verify_", 1)
-            if verify_status['verify_token'] != token:
-                return await message.reply("Invalid token. Please /start again.")
-
-            await db.update_verify_status(
-                user_id,
-                is_verified=True,
-                verified_time=time.time()
-            )
-            current = await db.get_verify_count(id)
-            await db.set_verify_count(id, current + 1)
-
-            original_start = verify_status.get('original_start', '')
-            if not original_start:
-                return await message.reply("No file found. Please try again.")
-
-            btn = InlineKeyboardMarkup([
-                [InlineKeyboardButton("GET FILE", url=f"https://t.me/{client.username}?start={original_start}")]
-            ])
-            return await message.reply(
-                f"Token verified!\nValid for {get_exp_time(VERIFY_EXPIRE)}\n\n"
-                "Click below to get your file",
-                reply_markup=btn
-            )
-
-        # === NOT VERIFIED & NOT PREMIUM → SHOW SHORTLINK ===
-        if not verify_status['is_verified'] and not is_premium:
-            try:
-                original_cmd = text.split(" ", 1)[1]
-            except:
-                return await message.reply("Invalid link.")
-
-            token = ''.join(random.choices(string.ascii_letters + string.digits, k=10))
-            verify_link = f"https://t.me/{client.username}?start=verify_{token}"
-            shortlink = await get_shortlink(SHORTLINK_URL, SHORTLINK_API, verify_link)
-            await db.update_verify_status(
-                user_id,
-                verify_token=token,
-                is_verified=False,
-                original_start=original_cmd,
-                link=shortlink
-            )
-
-            btn = [
-                [InlineKeyboardButton("Oᴘєη ʟιηк", url=shortlink),
-                 InlineKeyboardButton("Tυтσʀιαℓ", url=TUT_VID)],
-                [InlineKeyboardButton("Bυу Pʀємιυм", callback_data="premium")]
-            ]
-            return await message.reply(
-                f"Your token has expired. Please refresh to continue..\n\n"
-                f"<b>Token Timeout:</b> {get_exp_time(VERIFY_EXPIRE)}\n\n"
-                "<b>What is token?</b>\n"
-                f"Pass one ad to use bot for {get_exp_time(VERIFY_EXPIRE)}",
-                reply_markup=InlineKeyboardMarkup(btn)
-            )
-
+    
         # === SEND FILE (VERIFIED OR PREMIUM) ===
         try:
             base64_string = text.split(" ", 1)[1]

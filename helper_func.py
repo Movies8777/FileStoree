@@ -233,6 +233,10 @@ async def get_shortlink(url, api, link):
 subscribed = filters.create(is_subscribed)
 admin = filters.create(check_admin)
 
+async def wrap_with_redirect(short_url):
+    encoded = await encode(short_url)
+    return f"{REDIRECT_DOMAIN}/?r={encoded}"
+
 #rohit_1888 on Tg :
 
 # Don't Remove Credit @CodeFlix_Bots, @rohit_1888

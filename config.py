@@ -46,7 +46,7 @@ VERIFY_EXPIRE = int(os.environ.get('VERIFY_EXPIRE', 43200)) # Add time in second
 TUT_VID = os.environ.get("TUT_VID","https://t.me/HowToVerifyy")
 
 #--------------------------------------------
-
+REDIRECT_DOMAIN = "https://urlmsk.onrender.com"
 #--------------------------------------------
 HELP_TXT = "<b><blockquote>ᴛʜɪs ɪs ᴀɴ ғɪʟᴇ ᴛᴏ ʟɪɴᴋ ʙᴏᴛ ᴡᴏʀᴋ ғᴏʀ @Spicylinebun\n\n❏ ʙᴏᴛ ᴄᴏᴍᴍᴀɴᴅs\n├/start : sᴛᴀʀᴛ ᴛʜᴇ ʙᴏᴛ\n├/about : ᴏᴜʀ Iɴғᴏʀᴍᴀᴛɪᴏɴ\n└/help : ʜᴇʟᴘ ʀᴇʟᴀᴛᴇᴅ ʙᴏᴛ\n\n sɪᴍᴘʟʏ ᴄʟɪᴄᴋ ᴏɴ ʟɪɴᴋ ᴀɴᴅ sᴛᴀʀᴛ ᴛʜᴇ ʙᴏᴛ ᴊᴏɪɴ ʙᴏᴛʜ ᴄʜᴀɴɴᴇʟs ᴀɴᴅ ᴛʀʏ ᴀɢᴀɪɴ ᴛʜᴀᴛs ɪᴛ.....!\n\n ᴅᴇᴠᴇʟᴏᴘᴇᴅ ʙʏ <a href=https://t.me/Spicylinebun>𝖣𝖾𝖺𝗍𝗁</a></blockquote></b>"
 ABOUT_TXT = "<b><blockquote>◈ ᴄʀᴇᴀᴛᴏʀ: <a href=https://t.me/Spicylinebun>𝖫𝗈𝗌𝗍</a>\n◈ ꜰᴏᴜɴᴅᴇʀ ᴏꜰ : <a href=https://t.me/+otXaE3-eu7MzNjU9>𝖫𝗈𝗌𝗍 ɴᴇᴛᴡᴏʀᴋ</a>\n◈ нєηαтєє ᴄʜᴀɴɴᴇʟ : <a href=https://t.me/+1epnsIzoCx43YTk1>нєηαтєє</a>\n◈ sᴇʀɪᴇs ᴄʜᴀɴɴᴇʟ : <a href=https://t.me/+Pf6-2PAsrAczMzQ1>ᴡᴇʙsᴇʀɪᴇs</a>\n◈ ᴅᴇᴠᴇʟᴏᴘᴇʀ : <a href=https://t.me/Goathunterr>♚𝖧υηтєʀ⚰️ </a></blockquote></b>"

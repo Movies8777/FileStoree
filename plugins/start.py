@@ -70,7 +70,7 @@ async def start_command(client: Client, message: Message):
     FILE_AUTO_DELETE = await db.get_del_timer()
     text = message.text
 
-    
+    if len(text) > 7:
         # === SEND FILE (VERIFIED OR PREMIUM) ===
         try:
             base64_string = text.split(" ", 1)[1]

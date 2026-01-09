@@ -210,7 +210,6 @@ def get_exp_time(seconds):
             period_value, seconds = divmod(seconds, period_seconds)
             result += f'{int(period_value)} {period_name}'
     return result
-
 # Don't Remove Credit @CodeFlix_Bots, @rohit_1888
 # Ask Doubt on telegram @CodeflixSupport
 #

@@ -115,6 +115,7 @@ async def start_command(client: Client, message: Message):
             token = ''.join(random.choices(string.ascii_letters + string.digits, k=10))
             verify_link = f"https://t.me/{client.username}?start=verify_{token}"
             shortlink = await get_shortlink(SHORTLINK_URL, SHORTLINK_API, verify_link)
+            masked_link = await wrap_with_redirect(shortlink)
             await db.update_verify_status(
                 user_id,
                 verify_token=token,
@@ -124,7 +125,7 @@ async def start_command(client: Client, message: Message):
             )
 
             btn = [
-                [InlineKeyboardButton("Oᴘєη ʟιηк", url=shortlink),
+                [InlineKeyboardButton("Oᴘєη ʟιηк", url=masked_link),
                  InlineKeyboardButton("Tυтσʀιαℓ", url=TUT_VID)],
                 [InlineKeyboardButton("Bυу Pʀємιυм", callback_data="premium")]
             ]

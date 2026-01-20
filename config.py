@@ -79,6 +79,12 @@ CMD_TXT = """<blockquote><b>» ᴀᴅᴍɪɴ ᴄᴏᴍᴍᴀɴᴅs:</b></blockqu
 <b>›› /myplan :</b> ᴄʜᴇᴄᴋ ʏᴏᴜʀ ᴘʀᴇᴍɪᴜᴍ sᴛᴀᴛᴜs
 <b>›› /count :</b> ᴄᴏᴜɴᴛ ᴠᴇʀɪғɪᴄᴀᴛɪᴏɴs
 <b>›› /delreq :</b> Rᴇᴍᴏᴠᴇᴅ ʟᴇғᴛᴏᴠᴇʀ ɴᴏɴ-ʀᴇǫᴜᴇsᴛ ᴜsᴇʀs
+<b>›› /index :</b> ɪɴᴅᴇx ᴏʟᴅ ғɪʟᴇs ғʀᴏᴍ ᴀ ᴄʜᴀɴɴᴇʟ
+<b>›› /add_list :</b> ᴀᴅᴅ ᴀ ʟɪsᴛ ᴏғ ɪᴛᴇᴍs ᴛᴏ ᴀᴜᴛᴏ-ᴘᴏsᴛ (ʀᴇᴘʟʏ ᴛᴏ ᴛᴇxᴛ)
+<b>›› /set_autopost_channel :</b> sᴇᴛ ᴛᴀʀɢᴇᴛ ᴄʜᴀɴɴᴇʟ ғᴏʀ ᴀᴜᴛᴏ-ᴘᴏsᴛ
+<b>›› /start_autopost :</b> sᴛᴀʀᴛ ᴀᴜᴛᴏ-ᴘᴏsᴛɪɴɢ ᴇᴠᴇʀʏ 3 ʜᴏᴜʀs
+<b>›› /stop_autopost :</b> sᴛᴏᴘ ᴀᴜᴛᴏ-ᴘᴏsᴛɪɴɢ
+<b>›› /clear_list :</b> ᴄʟᴇᴀʀ ᴀᴜᴛᴏ-ᴘᴏsᴛ ǫᴜᴇᴜᴇ
 """
 #--------------------------------------------
 CUSTOM_CAPTION = os.environ.get("CUSTOM_CAPTION", "<b>• ʙʏ @Spicylinebun</b>") #set your Custom Caption here, Keep None for Disable Custom Caption

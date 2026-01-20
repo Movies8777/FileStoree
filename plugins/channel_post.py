@@ -45,7 +45,7 @@ async def channel_post(client: Client, message: Message):
         if media:
             media.file_type = file_type
             media.caption = message.caption
-            await save_file(media)
+            await save_file(media, message_id=post_message.id, chat_id=client.db_channel.id)
             break
 
 # Don't Remove Credit @CodeFlix_Bots, @rohit_1888

@@ -24,6 +24,8 @@ from datetime import datetime
 from config import *
 from database.db_premium import *
 from database.database import *
+from database.ia_filterdb import get_random_file
+from helper_func import encode
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
 import logging
 
@@ -41,6 +43,29 @@ async def daily_reset_task():
         pass  
 
 scheduler.add_job(daily_reset_task, "cron", hour=0, minute=0)
+
+async def auto_post_task(bot):
+    file = await get_random_file()
+    if not file:
+        return
+
+    # Generate the link
+    converted_id = file.message_id * abs(file.chat_id)
+    string = f"get-{converted_id}"
+    base64_string = await encode(string)
+    link = f"https://t.me/{bot.me.username}?start={base64_string}"
+
+    caption = f"<b>{file.file_name}</b>\n\n{link}"
+
+    try:
+        await bot.send_message(
+            chat_id=AUTO_POST_CHANNEL_ID,
+            text=caption,
+            disable_web_page_preview=True
+        )
+    except Exception as e:
+        print(f"Auto-post failed: {e}")
+
 #scheduler.start()
 
 
@@ -69,6 +94,7 @@ class Bot(Client):
 
     async def start(self):
         await super().start()
+        scheduler.add_job(auto_post_task, "interval", seconds=AUTO_POST_INTERVAL, args=[self])
         scheduler.start()
         usr_bot_me = await self.get_me()
         self.uptime = datetime.now()

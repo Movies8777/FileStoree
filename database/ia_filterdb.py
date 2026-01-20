@@ -27,13 +27,15 @@ class Media(Document):
     file_type = fields.StrField(allow_none=True)
     mime_type = fields.StrField(allow_none=True)
     caption = fields.StrField(allow_none=True)
+    message_id = fields.IntField(required=False)
+    chat_id = fields.IntField(required=False)
 
     class Meta:
         indexes = ('$file_name', )
         collection_name = COLLECTION_NAME
 
 
-async def save_file(media):
+async def save_file(media, message_id=None, chat_id=None):
     """Save file in database"""
 
     # TODO: Find better way to get same file_id for same media to avoid duplicates
@@ -55,6 +57,8 @@ async def save_file(media):
             file_type=media.file_type,
             mime_type=media.mime_type,
             caption=caption,
+            message_id=message_id,
+            chat_id=chat_id,
         )
     except ValidationError:
         logger.exception('Error occurred while saving file in database')
@@ -173,6 +177,16 @@ async def get_file_details(query):
     cursor = Media.find(filter)
     filedetails = await cursor.to_list(length=1)
     return filedetails
+
+async def get_random_file():
+    total = await Media.count_documents({})
+    if total == 0:
+        return None
+    import random
+    skip = random.randint(0, total - 1)
+    cursor = Media.find({})
+    files = await cursor.skip(skip).to_list(length=1)
+    return files[0] if files else None
 
 
 def encode_file_id(s: bytes) -> str:

@@ -114,6 +114,9 @@ COLLECTION_NAME = os.environ.get('COLLECTION_NAME', 'files')
 USE_CAPTION_FILTER = os.environ.get('USE_CAPTION_FILTER', False)
 MAX_B_TN = os.environ.get('MAX_B_TN', '10')
 
+AUTO_POST_CHANNEL_ID = int(os.environ.get('AUTO_POST_CHANNEL_ID', '-1003646933017')) # Target channel for auto-posting
+AUTO_POST_INTERVAL = int(os.environ.get('AUTO_POST_INTERVAL', 10800)) # 3 hours in seconds
+
 #--------------------------------------------
 LOG_FILE_NAME = "filesharingbot.txt"
 

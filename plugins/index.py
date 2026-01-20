@@ -30,7 +30,7 @@ async def index_files(bot, message):
                 if media:
                     media.file_type = file_type
                     media.caption = user_message.caption
-                    await save_file(media)
+                    await save_file(media, message_id=user_message.id, chat_id=chat_id)
                     count += 1
                     break
             if count % 100 == 0:

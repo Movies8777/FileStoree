@@ -337,6 +337,7 @@ class Rohit:
 
     async def search_files(self, query):
         # Search in file_name and caption
+        query = re.escape(query)
         regex = re.compile(query, re.IGNORECASE)
         cursor = self.files_data.find({
             '$or': [

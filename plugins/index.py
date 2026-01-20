@@ -2,7 +2,8 @@
 import asyncio
 import logging
 from pyrogram import Client, filters
-from pyrogram.errors import FloodWait
+from pyrogram.enums import ChatType
+from pyrogram.errors import FloodWait, BotMethodInvalid
 from config import OWNER_ID, CHANNEL_ID
 from database.database import db
 from helper_func import admin
@@ -20,44 +21,52 @@ async def index_command(client, message):
     except Exception as e:
         return await message.reply(f"Error: {e}")
 
+    if chat.type not in [ChatType.CHANNEL, ChatType.SUPERGROUP]:
+        return await message.reply("Only Channels and Supergroups can be indexed. Bots cannot access history of private groups or chats.")
+
     msg = await message.reply("Indexing started...")
     count = 0
 
-    async for user_message in client.get_chat_history(chat.id):
-        if user_message.media:
-            try:
-                copied_msg = await user_message.copy(CHANNEL_ID)
+    try:
+        async for user_message in client.get_chat_history(chat.id):
+            if user_message.media:
+                try:
+                    copied_msg = await user_message.copy(CHANNEL_ID)
 
-                # Index in DB
-                file = getattr(copied_msg, copied_msg.media.value)
-                await db.add_file(
-                    file_id=file.file_id,
-                    file_name=getattr(file, "file_name", "Untitled"),
-                    file_size=file.file_size,
-                    file_type=copied_msg.media.value,
-                    caption=copied_msg.caption,
-                    message_id=copied_msg.id
-                )
+                    # Index in DB
+                    file = getattr(copied_msg, copied_msg.media.value)
+                    await db.add_file(
+                        file_id=file.file_id,
+                        file_name=getattr(file, "file_name", "Untitled"),
+                        file_size=file.file_size,
+                        file_type=copied_msg.media.value,
+                        caption=copied_msg.caption,
+                        message_id=copied_msg.id
+                    )
 
-                count += 1
-            except FloodWait as e:
-                await asyncio.sleep(e.x)
-                copied_msg = await user_message.copy(CHANNEL_ID)
-                file = getattr(copied_msg, copied_msg.media.value)
-                await db.add_file(
-                    file_id=file.file_id,
-                    file_name=getattr(file, "file_name", "Untitled"),
-                    file_size=file.file_size,
-                    file_type=copied_msg.media.value,
-                    caption=copied_msg.caption,
-                    message_id=copied_msg.id
-                )
-                count += 1
-            except Exception:
-                pass
+                    count += 1
+                except FloodWait as e:
+                    await asyncio.sleep(e.x)
+                    copied_msg = await user_message.copy(CHANNEL_ID)
+                    file = getattr(copied_msg, copied_msg.media.value)
+                    await db.add_file(
+                        file_id=file.file_id,
+                        file_name=getattr(file, "file_name", "Untitled"),
+                        file_size=file.file_size,
+                        file_type=copied_msg.media.value,
+                        caption=copied_msg.caption,
+                        message_id=copied_msg.id
+                    )
+                    count += 1
+                except Exception:
+                    pass
 
-        if count % 100 == 0:
-            await msg.edit(f"Indexed {count} files...")
+            if count % 100 == 0:
+                await msg.edit(f"Indexed {count} files...")
+    except BotMethodInvalid:
+        return await msg.edit("Error: Bots cannot index this chat. Telegram restricts bots from fetching history in groups. Please use a Channel for indexing.")
+    except Exception as e:
+        return await msg.edit(f"Error during indexing: {e}")
 
     await msg.edit(f"Indexing complete! Total {count} files indexed and copied to DB channel.")
     await db.add_indexed_channel(chat.id)

@@ -226,6 +226,8 @@ def get_exp_time(seconds):
 
 
 async def get_shortlink(url, api, link):
+    if not api or not url:
+        raise ValueError("Shortlink API or URL not provided in config.")
     shortzy = Shortzy(api_key=api, base_site=url)
     link = await shortzy.convert(link)
     return link

@@ -74,7 +74,7 @@ async def start_command(client: Client, message: Message):
         verify_status = await db.get_verify_status(id)
 
         # Token expiry
-        if (SHORTLINK_URL or SHORTLINK_API):
+        if SHORTLINK_URL and SHORTLINK_API:
             if verify_status['is_verified'] and VERIFY_EXPIRE < (time.time() - verify_status['verified_time']):
                 await db.update_verify_status(user_id, is_verified=False, verify_token="", original_start="")
 
@@ -105,8 +105,8 @@ async def start_command(client: Client, message: Message):
                 reply_markup=btn
             )
 
-        # === NOT VERIFIED & NOT PREMIUM → SHOW SHORTLINK ===
-        if not verify_status['is_verified'] and not is_premium:
+        # === NOT VERIFIED & NOT PREMIUM → SHOW SHORTLINK (If Configured) ===
+        if not verify_status['is_verified'] and not is_premium and SHORTLINK_URL and SHORTLINK_API:
             try:
                 original_cmd = text.split(" ", 1)[1]
             except:
@@ -114,8 +114,13 @@ async def start_command(client: Client, message: Message):
 
             token = ''.join(random.choices(string.ascii_letters + string.digits, k=10))
             verify_link = f"https://t.me/{client.username}?start=verify_{token}"
-            shortlink = await get_shortlink(SHORTLINK_URL, SHORTLINK_API, verify_link)
-            masked_link = await wrap_with_redirect(shortlink)
+
+            try:
+                shortlink = await get_shortlink(SHORTLINK_URL, SHORTLINK_API, verify_link)
+                masked_link = await wrap_with_redirect(shortlink)
+            except Exception as e:
+                return await message.reply(f"Error generating shortlink: {e}")
+
             await db.update_verify_status(
                 user_id,
                 verify_token=token,

@@ -109,6 +109,12 @@ PRICE5 = os.environ.get("PRICE5", "530 rs")
 
 #===================(END)========================#
 
+#--------------------------------------------
+COLLECTION_NAME = os.environ.get('COLLECTION_NAME', 'files')
+USE_CAPTION_FILTER = os.environ.get('USE_CAPTION_FILTER', False)
+MAX_B_TN = os.environ.get('MAX_B_TN', '10')
+
+#--------------------------------------------
 LOG_FILE_NAME = "filesharingbot.txt"
 
 logging.basicConfig(

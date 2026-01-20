@@ -18,6 +18,7 @@ from pyrogram.errors import FloodWait
 from bot import Bot
 from config import *
 from helper_func import encode, admin
+from database.ia_filterdb import save_file
 
 @Bot.on_message(filters.private & admin & ~filters.command(['start', 'commands','users','broadcast','batch', 'custom_batch', 'genlink','stats', 'dlt_time', 'check_dlt_time', 'dbroadcast', 'ban', 'unban', 'banlist', 'addchnl', 'delchnl', 'listchnl', 'fsub_mode', 'pbroadcast', 'add_admin', 'deladmin', 'admins', 'addpremium', 'premium_users', 'remove_premium', 'myplan', 'count', 'delreq']))
 async def channel_post(client: Client, message: Message):
@@ -37,6 +38,15 @@ async def channel_post(client: Client, message: Message):
     link = f"https://t.me/{client.username}?start={base64_string}"
 
     await reply_text.edit(f"<b>Here is your link</b>\n\n{link}", disable_web_page_preview = True)
+
+    # Index the file
+    for file_type in ("document", "video", "audio"):
+        media = getattr(message, file_type, None)
+        if media:
+            media.file_type = file_type
+            media.caption = message.caption
+            await save_file(media)
+            break
 
 # Don't Remove Credit @CodeFlix_Bots, @rohit_1888
 # Ask Doubt on telegram @CodeflixSupport

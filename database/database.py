@@ -325,6 +325,8 @@ class Rohit:
 
     # FILE INDEXING
     async def add_file(self, file_id, file_name, file_size, file_type, caption, message_id):
+        if await self.is_file_indexed(file_id):
+            return False # Skip
         file_data = {
             'file_id': file_id,
             'file_name': file_name,
@@ -334,6 +336,11 @@ class Rohit:
             'message_id': message_id
         }
         await self.files_data.update_one({'file_id': file_id}, {'$set': file_data}, upsert=True)
+        return True # Added
+
+    async def is_file_indexed(self, file_id):
+        found = await self.files_data.find_one({'file_id': file_id})
+        return bool(found)
 
     async def search_files(self, query):
         # Search in file_name and caption

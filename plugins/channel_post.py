@@ -31,6 +31,18 @@ async def channel_post(client: Client, message: Message):
         print(e)
         await reply_text.edit_text("Something went Wrong..!")
         return
+
+    if post_message.media:
+        file = getattr(post_message, post_message.media.value)
+        await db.add_file(
+            file_id=file.file_id,
+            file_name=getattr(file, "file_name", "Untitled"),
+            file_size=file.file_size,
+            file_type=post_message.media.value,
+            caption=post_message.caption,
+            message_id=post_message.id
+        )
+
     converted_id = post_message.id * abs(client.db_channel.id)
     string = f"get-{converted_id}"
     base64_string = await encode(string)

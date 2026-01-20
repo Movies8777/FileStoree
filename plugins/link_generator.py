@@ -81,6 +81,16 @@ async def custom_batch(client: Client, message: Message):
 
         try:
             sent = await user_msg.copy(client.db_channel.id, disable_notification=True)
+            if sent.media:
+                file = getattr(sent, sent.media.value)
+                await db.add_file(
+                    file_id=file.file_id,
+                    file_name=getattr(file, "file_name", "Untitled"),
+                    file_size=file.file_size,
+                    file_type=sent.media.value,
+                    caption=sent.caption,
+                    message_id=sent.id
+                )
             collected.append(sent.id)
         except Exception as e:
             await message.reply(f"❌ Failed to store a message:\n<code>{e}</code>")

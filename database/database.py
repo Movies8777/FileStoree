@@ -347,5 +347,23 @@ class Rohit:
         })
         return await cursor.to_list(length=10)
 
+    # STATS TRACKING
+    async def get_user_count(self):
+        return await self.user_data.count_documents({})
+
+    async def get_file_count(self):
+        return await self.files_data.count_documents({})
+
+    async def get_total_posted(self):
+        settings = await self.get_autopost_settings()
+        return settings.get('total_posted', 0)
+
+    async def increment_total_posted(self):
+        await self.autopost_settings_data.update_one(
+            {'_id': 'settings'},
+            {'$inc': {'total_posted': 1}},
+            upsert=True
+        )
+
 
 db = Rohit(DB_URI, DB_NAME)

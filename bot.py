@@ -93,6 +93,7 @@ async def auto_post_job(bot: Client):
             await bot.send_photo(target_channel, photo=thumbnail, caption=caption, reply_markup=btn)
         else:
             await bot.send_message(target_channel, text=caption, reply_markup=btn)
+        await db.increment_total_posted()
     except Exception as e:
         logging.error(f"Auto-post error: {e}")
 

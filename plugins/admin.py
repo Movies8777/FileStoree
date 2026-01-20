@@ -148,6 +148,25 @@ async def get_admins(client: Client, message: Message):
     reply_markup = InlineKeyboardMarkup([[InlineKeyboardButton("ᴄʟᴏsᴇ", callback_data="close")]])
     await pro.edit(f"<b>⚡ Current Admin List:</b>\n\n{admin_list}", reply_markup=reply_markup)
 
+
+@Bot.on_message(filters.command('stats') & filters.private & admin)
+async def get_stats(client: Client, message: Message):
+    users = await db.get_user_count()
+    files = await db.get_file_count()
+    posted = await db.get_total_posted()
+    verify_count = await db.get_total_verify_count()
+
+    stats_text = (
+        "<b>📊 ʙᴏᴛ sᴛᴀᴛɪsᴛɪᴄs</b>\n\n"
+        f"<b>👤 ᴛᴏᴛᴀʟ ᴜsᴇʀs:</b> {users}\n"
+        f"<b>📁 ᴅʙ ғɪʟᴇs:</b> {files}\n"
+        f"<b>🚀 ᴛᴏᴛᴀʟ ᴘᴏsᴛᴇᴅ:</b> {posted}\n"
+        f"<b>✅ ᴛᴏᴛᴀʟ ᴄᴏᴜɴᴛ:</b> {verify_count}"
+    )
+
+    reply_markup = InlineKeyboardMarkup([[InlineKeyboardButton("ᴄʟᴏsᴇ", callback_data="close")]])
+    await message.reply_text(stats_text, reply_markup=reply_markup)
+
 # Don't Remove Credit @CodeFlix_Bots, @rohit_1888
 # Ask Doubt on telegram @CodeflixSupport
 #

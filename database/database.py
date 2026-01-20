@@ -3,8 +3,10 @@
 
 import motor, asyncio
 import motor.motor_asyncio
-import time, re
+import time, re, base64
+from struct import pack
 import pymongo, os
+from pyrogram.file_id import FileId
 from config import DB_URI, DB_NAME
 import logging
 from datetime import datetime, timedelta
@@ -325,17 +327,20 @@ class Rohit:
 
     # FILE INDEXING
     async def add_file(self, file_id, file_name, file_size, file_type, caption, message_id):
-        if await self.is_file_indexed(file_id):
+        stable_id, _ = unpack_new_file_id(file_id)
+        if await self.is_file_indexed(stable_id):
             return False # Skip
+
+        file_name = re.sub(r"(_|\-|\.|\+)", " ", str(file_name))
         file_data = {
-            'file_id': file_id,
+            'file_id': stable_id,
             'file_name': file_name,
             'file_size': file_size,
             'file_type': file_type,
             'caption': caption,
             'message_id': message_id
         }
-        await self.files_data.update_one({'file_id': file_id}, {'$set': file_data}, upsert=True)
+        await self.files_data.update_one({'file_id': stable_id}, {'$set': file_data}, upsert=True)
         return True # Added
 
     async def is_file_indexed(self, file_id):
@@ -344,8 +349,19 @@ class Rohit:
 
     async def search_files(self, query):
         # Search in file_name and caption
-        query = re.escape(query)
-        regex = re.compile(query, re.IGNORECASE)
+        query = query.strip()
+        if not query:
+            raw_pattern = '.'
+        elif ' ' not in query:
+            raw_pattern = r'(\b|[\.\+\-_])' + re.escape(query) + r'(\b|[\.\+\-_])'
+        else:
+            raw_pattern = re.escape(query).replace(r'\ ', r'.*[\s\.\+\-_]')
+
+        try:
+            regex = re.compile(raw_pattern, flags=re.IGNORECASE)
+        except:
+            return []
+
         cursor = self.files_data.find({
             '$or': [
                 {'file_name': regex},
@@ -371,6 +387,43 @@ class Rohit:
             {'$inc': {'total_posted': 1}},
             upsert=True
         )
+
+
+def encode_file_id(s: bytes) -> str:
+    r = b""
+    n = 0
+
+    for i in s + bytes([22]) + bytes([4]):
+        if i == 0:
+            n += 1
+        else:
+            if n:
+                r += b"\x00" + bytes([n])
+                n = 0
+
+            r += bytes([i])
+
+    return base64.urlsafe_b64encode(r).decode().rstrip("=")
+
+
+def encode_file_ref(file_ref: bytes) -> str:
+    return base64.urlsafe_b64encode(file_ref).decode().rstrip("=")
+
+
+def unpack_new_file_id(new_file_id):
+    """Return file_id, file_ref"""
+    decoded = FileId.decode(new_file_id)
+    file_id = encode_file_id(
+        pack(
+            "<iiqq",
+            int(decoded.file_type),
+            decoded.dc_id,
+            decoded.media_id,
+            decoded.access_hash
+        )
+    )
+    file_ref = encode_file_ref(decoded.file_reference)
+    return file_id, file_ref
 
 
 db = Rohit(DB_URI, DB_NAME)

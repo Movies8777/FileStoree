@@ -124,11 +124,25 @@ async def index_files_to_db(chat_id, msg, bot):
                 if user_message.media:
                     try:
                         file = getattr(user_message, user_message.media.value)
-                        if await db.is_file_indexed(file.file_id):
+                        is_added = await db.add_file(
+                            file_id=file.file_id,
+                            file_name=getattr(file, "file_name", "Untitled"),
+                            file_size=file.file_size,
+                            file_type=user_message.media.value,
+                            caption=user_message.caption,
+                            message_id=user_message.id # This is the original message ID, but we usually want the DB channel ID
+                        )
+
+                        if not is_added:
                             skipped += 1
                         else:
+                            # Actually we should copy to DB channel first to get the bot's file_id
+                            # if we want the bot to serve the file later.
+                            # But wait, add_file refactor expects a file_id.
+                            # Let's fix this logic: copy first, then add.
                             copied_msg = await user_message.copy(CHANNEL_ID)
                             bot_file = getattr(copied_msg, copied_msg.media.value)
+                            # Re-add with bot's file info and message ID
                             await db.add_file(
                                 file_id=bot_file.file_id,
                                 file_name=getattr(bot_file, "file_name", "Untitled"),

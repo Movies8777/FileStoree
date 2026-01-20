@@ -49,7 +49,9 @@ class Rohit:
         self.fsub_data = self.database['fsub']   
         self.rqst_fsub_data = self.database['request_forcesub']
         self.rqst_fsub_Channel_data = self.database['request_forcesub_channel']
-        
+        self.indexed_channels_data = self.database['indexed_channels']
+        self.autopost_list_data = self.database['autopost_list']
+        self.autopost_settings_data = self.database['autopost_settings']
 
 
     # USER DATA
@@ -262,6 +264,63 @@ class Rohit:
         ]
         result = await self.sex_data.aggregate(pipeline).to_list(length=1)
         return result[0]["total"] if result else 0
+
+    # INDEXED CHANNELS
+    async def add_indexed_channel(self, channel_id: int):
+        await self.indexed_channels_data.update_one({'_id': channel_id}, {'$set': {'_id': channel_id}}, upsert=True)
+
+    async def get_indexed_channels(self):
+        docs = await self.indexed_channels_data.find().to_list(length=None)
+        return [doc['_id'] for doc in docs]
+
+    async def is_channel_indexed(self, channel_id: int):
+        found = await self.indexed_channels_data.find_one({'_id': channel_id})
+        return bool(found)
+
+    # AUTOPOST LIST
+    async def add_to_autopost_list(self, items: list):
+        # items is a list of strings (queries/filenames)
+        for item in items:
+            await self.autopost_list_data.insert_one({'item': item})
+
+    async def get_next_autopost_item(self):
+        settings = await self.get_autopost_settings()
+        index = settings.get('current_index', 0)
+
+        total_items = await self.autopost_list_data.count_documents({})
+        if total_items == 0:
+            return None
+
+        if index >= total_items:
+            index = 0
+            await self.update_autopost_settings({'current_index': 0})
+
+        cursor = self.autopost_list_data.find().skip(index).limit(1)
+        items = await cursor.to_list(length=1)
+        if not items:
+            return None
+
+        item = items[0]['item']
+        await self.update_autopost_settings({'current_index': index + 1})
+        return item
+
+    async def clear_autopost_list(self):
+        await self.autopost_list_data.delete_many({})
+        await self.update_autopost_settings({'current_index': 0})
+
+    async def get_autopost_list_count(self):
+        return await self.autopost_list_data.count_documents({})
+
+    # AUTOPOST SETTINGS
+    async def get_autopost_settings(self):
+        settings = await self.autopost_settings_data.find_one({'_id': 'settings'})
+        if not settings:
+            settings = {'_id': 'settings', 'target_channel': 0, 'is_running': False, 'current_index': 0}
+            await self.autopost_settings_data.insert_one(settings)
+        return settings
+
+    async def update_autopost_settings(self, updates: dict):
+        await self.autopost_settings_data.update_one({'_id': 'settings'}, {'$set': updates}, upsert=True)
 
 
 db = Rohit(DB_URI, DB_NAME)

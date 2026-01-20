@@ -24,6 +24,7 @@ from datetime import datetime
 from config import *
 from database.db_premium import *
 from database.database import *
+from helper_func import get_tmdb_data, encode
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
 import logging
 
@@ -41,7 +42,59 @@ async def daily_reset_task():
         pass  
 
 scheduler.add_job(daily_reset_task, "cron", hour=0, minute=0)
-#scheduler.start()
+
+async def auto_post_job(bot: Client):
+    settings = await db.get_autopost_settings()
+    if not settings.get('is_running'):
+        return
+
+    target_channel = settings.get('target_channel')
+    if not target_channel:
+        return
+
+    query = await db.get_next_autopost_item()
+    if not query:
+        return
+
+    # Search for files in db_channel
+    files = []
+    async for message in bot.search_messages(CHANNEL_ID, query=query):
+        if message.media:
+            files.append(message)
+
+    if not files:
+        return
+
+    # Get TMDB data
+    tmdb_data = await get_tmdb_data(query)
+    caption = f"<b>{query}</b>"
+    thumbnail = None
+
+    if tmdb_data:
+        caption = f"<b>{tmdb_data['title']}</b>\n\n"
+        caption += f"⭐ {tmdb_data['rating']}/10\n\n"
+        caption += f"<i>{tmdb_data['overview']}</i>\n\n"
+        caption += f"<b>• ʙʏ @{bot.username}</b>"
+        thumbnail = tmdb_data['poster_url']
+
+    # Generate link for the first file found
+    file_message = files[0]
+    converted_id = file_message.id * abs(CHANNEL_ID)
+    string = f"get-{converted_id}"
+    base64_string = await encode(string)
+    link = f"https://t.me/{bot.username}?start={base64_string}"
+
+    btn = InlineKeyboardMarkup([[InlineKeyboardButton("🍿 Download Now", url=link)]])
+
+    try:
+        if thumbnail:
+            await bot.send_photo(target_channel, photo=thumbnail, caption=caption, reply_markup=btn)
+        else:
+            await bot.send_message(target_channel, text=caption, reply_markup=btn)
+    except Exception as e:
+        logging.error(f"Auto-post error: {e}")
+
+# scheduler.start() will be called in Bot.start()
 
 
 name ="""
@@ -69,6 +122,7 @@ class Bot(Client):
 
     async def start(self):
         await super().start()
+        scheduler.add_job(auto_post_job, "interval", hours=3, args=[self])
         scheduler.start()
         usr_bot_me = await self.get_me()
         self.uptime = datetime.now()

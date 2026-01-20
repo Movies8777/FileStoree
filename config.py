@@ -40,6 +40,8 @@ START_PIC = os.environ.get("START_PIC", "https://i.postimg.cc/4yCmP76g/chdyt.jpg
 FORCE_PIC = os.environ.get("FORCE_PIC", "https://i.postimg.cc/mkwB9tVr/hmhg.jpg")
 
 #--------------------------------------------
+TMDB_API_KEY = os.environ.get("TMDB_API_KEY", "")
+#--------------------------------------------
 SHORTLINK_URL = os.environ.get("SHORTLINK_URL", "")
 SHORTLINK_API = os.environ.get("SHORTLINK_API", "")
 VERIFY_EXPIRE = int(os.environ.get('VERIFY_EXPIRE', 43200)) # Add time in seconds

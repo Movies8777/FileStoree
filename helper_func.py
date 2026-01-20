@@ -5,6 +5,7 @@ import base64
 import re
 import asyncio
 import time
+import aiohttp
 from pyrogram import filters
 from pyrogram.enums import ChatMemberStatus
 from config import *
@@ -236,6 +237,37 @@ admin = filters.create(check_admin)
 async def wrap_with_redirect(short_url):
     encoded = await encode(short_url)
     return f"{REDIRECT_DOMAIN}/?r={encoded}"
+
+async def get_tmdb_data(query):
+    if not TMDB_API_KEY:
+        return None
+
+    # Clean query (remove year etc for better results)
+    query = re.sub(r'\(?\d{4}\)?', '', query).strip()
+
+    params = {
+        'api_key': TMDB_API_KEY,
+        'query': query
+    }
+    url = "https://api.themoviedb.org/3/search/multi"
+    async with aiohttp.ClientSession() as session:
+        async with session.get(url, params=params) as response:
+            if response.status == 200:
+                data = await response.json()
+                if data.get('results'):
+                    result = data['results'][0]
+                    title = result.get('title') or result.get('name')
+                    overview = result.get('overview')
+                    rating = result.get('vote_average')
+                    poster_path = result.get('poster_path')
+                    poster_url = f"https://image.tmdb.org/t/p/w500{poster_path}" if poster_path else None
+                    return {
+                        'title': title,
+                        'overview': overview,
+                        'rating': rating,
+                        'poster_url': poster_url
+                    }
+    return None
 
 #rohit_1888 on Tg :
 

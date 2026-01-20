@@ -3,7 +3,7 @@
 
 import motor, asyncio
 import motor.motor_asyncio
-import time
+import time, re
 import pymongo, os
 from config import DB_URI, DB_NAME
 import logging
@@ -52,6 +52,7 @@ class Rohit:
         self.indexed_channels_data = self.database['indexed_channels']
         self.autopost_list_data = self.database['autopost_list']
         self.autopost_settings_data = self.database['autopost_settings']
+        self.files_data = self.database['files']
 
 
     # USER DATA
@@ -321,6 +322,29 @@ class Rohit:
 
     async def update_autopost_settings(self, updates: dict):
         await self.autopost_settings_data.update_one({'_id': 'settings'}, {'$set': updates}, upsert=True)
+
+    # FILE INDEXING
+    async def add_file(self, file_id, file_name, file_size, file_type, caption, message_id):
+        file_data = {
+            'file_id': file_id,
+            'file_name': file_name,
+            'file_size': file_size,
+            'file_type': file_type,
+            'caption': caption,
+            'message_id': message_id
+        }
+        await self.files_data.update_one({'file_id': file_id}, {'$set': file_data}, upsert=True)
+
+    async def search_files(self, query):
+        # Search in file_name and caption
+        regex = re.compile(query, re.IGNORECASE)
+        cursor = self.files_data.find({
+            '$or': [
+                {'file_name': regex},
+                {'caption': regex}
+            ]
+        })
+        return await cursor.to_list(length=10)
 
 
 db = Rohit(DB_URI, DB_NAME)

@@ -17,6 +17,7 @@ import asyncio
 import pyromod.listen
 from pyrogram import Client
 from pyrogram.enums import ParseMode
+from pyrogram.types import InlineKeyboardMarkup, InlineKeyboardButton
 import sys
 import pytz
 from datetime import datetime
@@ -56,30 +57,31 @@ async def auto_post_job(bot: Client):
     if not query:
         return
 
-    # Search for files in db_channel
-    files = []
-    async for message in bot.search_messages(CHANNEL_ID, query=query):
-        if message.media:
-            files.append(message)
+    # Search for files in DB instead of searching messages
+    files = await db.search_files(query)
 
     if not files:
         return
 
     # Get TMDB data
     tmdb_data = await get_tmdb_data(query)
-    caption = f"<b>{query}</b>"
-    thumbnail = None
 
     if tmdb_data:
-        caption = f"<b>{tmdb_data['title']}</b>\n\n"
+        caption = f"<b>{tmdb_data['title']} ({tmdb_data['year']})</b>\n\n"
         caption += f"⭐ {tmdb_data['rating']}/10\n\n"
         caption += f"<i>{tmdb_data['overview']}</i>\n\n"
         caption += f"<b>• ʙʏ @{bot.username}</b>"
         thumbnail = tmdb_data['poster_url']
+    else:
+        caption = f"<b>{query}</b>\n\n"
+        caption += f"<i>No description available.</i>\n\n"
+        caption += f"<b>• ʙʏ @{bot.username}</b>"
+        thumbnail = None
 
     # Generate link for the first file found
-    file_message = files[0]
-    converted_id = file_message.id * abs(CHANNEL_ID)
+    file_data = files[0]
+    file_message_id = file_data['message_id']
+    converted_id = file_message_id * abs(CHANNEL_ID)
     string = f"get-{converted_id}"
     base64_string = await encode(string)
     link = f"https://t.me/{bot.username}?start={base64_string}"

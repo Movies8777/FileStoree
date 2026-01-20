@@ -26,11 +26,32 @@ async def index_command(client, message):
     async for user_message in client.get_chat_history(chat.id):
         if user_message.media:
             try:
-                await user_message.copy(CHANNEL_ID)
+                copied_msg = await user_message.copy(CHANNEL_ID)
+
+                # Index in DB
+                file = getattr(copied_msg, copied_msg.media.value)
+                await db.add_file(
+                    file_id=file.file_id,
+                    file_name=getattr(file, "file_name", "Untitled"),
+                    file_size=file.file_size,
+                    file_type=copied_msg.media.value,
+                    caption=copied_msg.caption,
+                    message_id=copied_msg.id
+                )
+
                 count += 1
             except FloodWait as e:
                 await asyncio.sleep(e.x)
-                await user_message.copy(CHANNEL_ID)
+                copied_msg = await user_message.copy(CHANNEL_ID)
+                file = getattr(copied_msg, copied_msg.media.value)
+                await db.add_file(
+                    file_id=file.file_id,
+                    file_name=getattr(file, "file_name", "Untitled"),
+                    file_size=file.file_size,
+                    file_type=copied_msg.media.value,
+                    caption=copied_msg.caption,
+                    message_id=copied_msg.id
+                )
                 count += 1
             except Exception:
                 pass
@@ -45,9 +66,29 @@ async def index_command(client, message):
 async def auto_index(client, message):
     if await db.is_channel_indexed(message.chat.id):
         try:
-            await message.copy(CHANNEL_ID)
+            copied_msg = await message.copy(CHANNEL_ID)
+
+            # Index in DB
+            file = getattr(copied_msg, copied_msg.media.value)
+            await db.add_file(
+                file_id=file.file_id,
+                file_name=getattr(file, "file_name", "Untitled"),
+                file_size=file.file_size,
+                file_type=copied_msg.media.value,
+                caption=copied_msg.caption,
+                message_id=copied_msg.id
+            )
         except FloodWait as e:
             await asyncio.sleep(e.x)
-            await message.copy(CHANNEL_ID)
+            copied_msg = await message.copy(CHANNEL_ID)
+            file = getattr(copied_msg, copied_msg.media.value)
+            await db.add_file(
+                file_id=file.file_id,
+                file_name=getattr(file, "file_name", "Untitled"),
+                file_size=file.file_size,
+                file_type=copied_msg.media.value,
+                caption=copied_msg.caption,
+                message_id=copied_msg.id
+            )
         except Exception as e:
             logger.error(f"Auto-index error: {e}")

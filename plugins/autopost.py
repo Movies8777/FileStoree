@@ -40,3 +40,19 @@ async def stop_autopost_command(client, message):
 async def clear_list_command(client, message):
     await db.clear_autopost_list()
     await message.reply("Auto-post list cleared.")
+
+@Client.on_message(filters.command("autopost_info") & admin)
+async def autopost_info_command(client, message):
+    settings = await db.get_autopost_settings()
+    is_running = settings.get('is_running', False)
+    target_channel = settings.get('target_channel', 0)
+    current_index = settings.get('current_index', 0)
+    total_items = await db.get_autopost_list_count()
+
+    text = f"<b><u>ᴀᴜᴛᴏ-ᴘᴏsᴛ sᴛᴀᴛᴜs</u></b>\n\n"
+    text += f"<b>ʀᴜɴɴɪɴɢ:</b> {'✅' if is_running else '❌'}\n"
+    text += f"<b>ᴛᴀʀɢᴇᴛ ᴄʜᴀɴɴᴇʟ:</b> <code>{target_channel}</code>\n"
+    text += f"<b>ǫᴜᴇᴜᴇ sɪᴢᴇ:</b> {total_items}\n"
+    text += f"<b>ᴄᴜʀʀᴇɴᴛ ɪɴᴅᴇx:</b> {current_index}\n"
+
+    await message.reply(text)

@@ -261,11 +261,16 @@ async def get_tmdb_data(query):
                     rating = result.get('vote_average')
                     poster_path = result.get('poster_path')
                     poster_url = f"https://image.tmdb.org/t/p/w500{poster_path}" if poster_path else None
+
+                    release_date = result.get('release_date') or result.get('first_air_date')
+                    year = release_date.split('-')[0] if release_date else "N/A"
+
                     return {
                         'title': title,
                         'overview': overview,
                         'rating': rating,
-                        'poster_url': poster_url
+                        'poster_url': poster_url,
+                        'year': year
                     }
     return None
 

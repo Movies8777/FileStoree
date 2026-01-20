@@ -3,7 +3,7 @@ import asyncio
 import logging
 from pyrogram import Client, filters
 from pyrogram.errors import FloodWait
-from config import ADMINS, OWNER_ID, CHANNEL_ID
+from config import OWNER_ID, CHANNEL_ID
 from database.database import db
 from helper_func import admin
 

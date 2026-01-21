@@ -35,6 +35,7 @@ async def post_command(client: Bot, message: Message):
     # Grouping logic and metadata extraction
     res_groups = {}
     audio_tracks = set()
+    unique_res = set()
     year = details.get('release_date', '')[:4] if details.get('release_date') else "N/A"
 
     for file in files:
@@ -42,11 +43,14 @@ async def post_command(client: Bot, message: Message):
         # Regex to find resolution
         res_match = re.search(r'(\d{3,4}p|4[kK])', file_name, re.IGNORECASE)
         res = res_match.group(1).upper() if res_match else "OTHERS"
+        if res != "OTHERS":
+            unique_res.add(res)
 
         # Audio track extraction (common patterns)
         audios = re.findall(r'(Hindi|Odia|English|Tamil|Telugu|Malayalam|Kannada|Bengali|Marathi|Punjabi|Multi|Dual|Audio)', file_name, re.IGNORECASE)
         for a in audios:
-            audio_tracks.add(a.capitalize())
+            if a.capitalize() != "Audio":
+                audio_tracks.add(a.capitalize())
 
         if res not in res_groups:
             res_groups[res] = []
@@ -60,36 +64,30 @@ async def post_command(client: Bot, message: Message):
 
     # Caption Construction
     title = details['title']
-    audios_str = ", ".join(sorted(list(audio_tracks))) if audio_tracks else "Not Specified"
+    res_str = " + ".join(sorted(list(unique_res))) if unique_res else "HDR"
+    audios_str = " + ".join(sorted(list(audio_tracks))) if audio_tracks else "Multi Audio"
 
-    # Try to find common format info in file names if available
-    res_info = "720p BluRay x264 + x265 HEVC Multi Audio"
-    for file in files:
-        if '1080p' in file['file_name'].lower():
-             res_info = "1080p BluRay x264 + x265 HEVC Multi Audio"
-             break
-        elif '2160p' in file['file_name'].lower() or '4k' in file['file_name'].lower():
-             res_info = "2160p 4K UHD BluRay Multi Audio"
-             break
-
-    caption = f"<b>{title} ({year}) {res_info}\n\n"
-    caption += f"> Audio Tracks: {audios_str} </b>"
+    caption = f"<b>🎬 {title} ({year}) [{res_str}] [{audios_str}]\n\n"
+    caption += f"✨ Join Our Main Channel @Movies8777\n"
+    caption += f"━━━━━━━━━━━━━━━━━━━━━━\n"
+    caption += f"⭐ Audio : {audios_str}\n"
+    caption += f"💎 Quality : {res_str}</b>"
 
     # Button Construction
     buttons = []
-    # Collect all resolution links
+    all_buttons = []
+
+    # Collect all buttons from all resolutions
     for res in sorted(res_groups.keys()):
-        row = []
         for res_label, link in res_groups[res]:
-            row.append(InlineKeyboardButton(res_label, url=link))
-            if len(row) == 2:
-                buttons.append(row)
-                row = []
-        if row:
-            buttons.append(row)
+            all_buttons.append(InlineKeyboardButton(f"⚡ {res_label}", url=link))
+
+    # Create 3-column grid
+    for i in range(0, len(all_buttons), 3):
+        buttons.append(all_buttons[i:i+3])
 
     # Add How To Download button
-    buttons.append([InlineKeyboardButton("How To Download", url=TUT_VID)])
+    buttons.append([InlineKeyboardButton("🍿 Hᴏᴡ Tᴏ Dᴏᴡɴʟᴏᴀᴅ 🍿", url=TUT_VID)])
 
     # Truncate if over 1024 characters
     if len(caption) > 1024:

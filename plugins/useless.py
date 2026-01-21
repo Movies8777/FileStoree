@@ -31,7 +31,7 @@ from database.database import db
 @Bot.on_message(filters.command('stats') & admin)
 async def stats(bot: Bot, message: Message):
     files = await db.total_files()
-    users = len(await db.full_userbase())
+    users = await db.total_users_count()
     verify = await db.get_total_verify_count()
     now = datetime.now()
     delta = now - bot.uptime
@@ -43,7 +43,7 @@ async def stats(bot: Bot, message: Message):
         f"<b>👥 ᴛᴏᴛᴀʟ ᴜsᴇʀs :</b> <code>{users}</code>\n"
         f"<b>✅ ᴛᴏᴛᴀʟ ᴠᴇʀɪғʏ :</b> <code>{verify}</code>\n"
         f"<b>⏳ ʙᴏᴛ ᴜᴘᴛɪᴍᴇ :</b> <code>{uptime}</code>\n\n"
-        "<b>🛡️ sᴛᴀᴛᴜs: ᴏɴʟɪɴᴇ [ʜɪɢʜ]</b>"
+        "<b>⚙️ sᴛᴀᴛᴜs: ʀᴜɴɴɪɴɢ [ᴀᴄᴛɪᴠᴇ]</b>"
     )
     await message.reply_text(text)
 

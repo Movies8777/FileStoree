@@ -67,6 +67,9 @@ class Rohit:
         user_ids = [doc['_id'] for doc in user_docs]
         return user_ids
 
+    async def total_users_count(self):
+        return await self.user_data.count_documents({})
+
     async def del_user(self, user_id: int):
         await self.user_data.delete_one({'_id': user_id})
         return

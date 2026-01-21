@@ -17,15 +17,17 @@ async def get_movie_details(tmdb_id, media_type):
         async with session.get(url) as response:
             if response.status == 200:
                 data = await response.json()
-                poster_path = data.get('poster_path')
-                poster_url = f"https://image.tmdb.org/t/p/w500{poster_path}" if poster_path else None
+                backdrop_path = data.get('backdrop_path')
+                backdrop_url = f"https://image.tmdb.org/t/p/original{backdrop_path}" if backdrop_path else None
                 rating = data.get('vote_average', 0)
                 genres = [g['name'] for g in data.get('genres', [])]
+                release_date = data.get('release_date') or data.get('first_air_date')
                 return {
-                    'poster_url': poster_url,
+                    'backdrop_url': backdrop_url,
                     'rating': rating,
                     'genres': genres,
                     'title': data.get('title') or data.get('name'),
-                    'overview': data.get('overview')
+                    'overview': data.get('overview'),
+                    'release_date': release_date
                 }
     return None

@@ -107,35 +107,36 @@ async def start_command(client: Client, message: Message):
 
         # === NOT VERIFIED & NOT PREMIUM → SHOW SHORTLINK ===
         if not verify_status['is_verified'] and not is_premium:
-            try:
-                original_cmd = text.split(" ", 1)[1]
-            except:
-                return await message.reply("Invalid link.")
+            if SHORTLINK_URL and SHORTLINK_API:
+                try:
+                    original_cmd = text.split(" ", 1)[1]
+                except:
+                    return await message.reply("Invalid link.")
 
-            token = ''.join(random.choices(string.ascii_letters + string.digits, k=10))
-            verify_link = f"https://t.me/{client.username}?start=verify_{token}"
-            shortlink = await get_shortlink(SHORTLINK_URL, SHORTLINK_API, verify_link)
-            masked_link = await wrap_with_redirect(shortlink)
-            await db.update_verify_status(
-                user_id,
-                verify_token=token,
-                is_verified=False,
-                original_start=original_cmd,
-                link=shortlink
-            )
+                token = ''.join(random.choices(string.ascii_letters + string.digits, k=10))
+                verify_link = f"https://t.me/{client.username}?start=verify_{token}"
+                shortlink = await get_shortlink(SHORTLINK_URL, SHORTLINK_API, verify_link)
+                masked_link = await wrap_with_redirect(shortlink)
+                await db.update_verify_status(
+                    user_id,
+                    verify_token=token,
+                    is_verified=False,
+                    original_start=original_cmd,
+                    link=shortlink
+                )
 
-            btn = [
-                [InlineKeyboardButton("Oᴘєη ʟιηк", url=masked_link),
-                 InlineKeyboardButton("Tυтσʀιαℓ", url=TUT_VID)],
-                [InlineKeyboardButton("Bυу Pʀємιυм", callback_data="premium")]
-            ]
-            return await message.reply(
-                f"Your token has expired. Please refresh to continue..\n\n"
-                f"<b>Token Timeout:</b> {get_exp_time(VERIFY_EXPIRE)}\n\n"
-                "<b>What is token?</b>\n"
-                f"Pass one ad to use bot for {get_exp_time(VERIFY_EXPIRE)}",
-                reply_markup=InlineKeyboardMarkup(btn)
-            )
+                btn = [
+                    [InlineKeyboardButton("Oᴘєη ʟιηк", url=masked_link),
+                     InlineKeyboardButton("Tυтσʀιαℓ", url=TUT_VID)],
+                    [InlineKeyboardButton("Bυу Pʀємιυм", callback_data="premium")]
+                ]
+                return await message.reply(
+                    f"Your token has expired. Please refresh to continue..\n\n"
+                    f"<b>Token Timeout:</b> {get_exp_time(VERIFY_EXPIRE)}\n\n"
+                    "<b>What is token?</b>\n"
+                    f"Pass one ad to use bot for {get_exp_time(VERIFY_EXPIRE)}",
+                    reply_markup=InlineKeyboardMarkup(btn)
+                )
 
         # === SEND FILE (VERIFIED OR PREMIUM) ===
         try:

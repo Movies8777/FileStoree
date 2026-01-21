@@ -2,7 +2,7 @@ import re
 from pyrogram import Client, filters
 from pyrogram.types import Message, InlineKeyboardMarkup, InlineKeyboardButton
 from bot import Bot
-from config import CHANNEL_ID, LOGGER, POST_CHANNEL_ID
+from config import CHANNEL_ID, LOGGER, POST_CHANNEL_ID, TUT_VID
 from helper_func import admin, encode
 from database.database import db
 from plugins.tmdb import search_tmdb, get_movie_details
@@ -32,13 +32,21 @@ async def post_command(client: Bot, message: Message):
     if not details:
         return await search_msg.edit("<b>Fᴀɪʟᴇᴅ ᴛᴏ ғᴇᴛᴄʜ TMDB ᴅᴇᴛᴀɪʟs!</b>")
 
-    # Grouping logic
+    # Grouping logic and metadata extraction
     res_groups = {}
+    audio_tracks = set()
+    year = details.get('release_date', '')[:4] if details.get('release_date') else "N/A"
+
     for file in files:
         file_name = file['file_name']
         # Regex to find resolution
         res_match = re.search(r'(\d{3,4}p|4[kK])', file_name, re.IGNORECASE)
         res = res_match.group(1).upper() if res_match else "OTHERS"
+
+        # Audio track extraction (common patterns)
+        audios = re.findall(r'(Hindi|Odia|English|Tamil|Telugu|Malayalam|Kannada|Bengali|Marathi|Punjabi|Multi|Dual|Audio)', file_name, re.IGNORECASE)
+        for a in audios:
+            audio_tracks.add(a.capitalize())
 
         if res not in res_groups:
             res_groups[res] = []
@@ -48,26 +56,40 @@ async def post_command(client: Bot, message: Message):
         base64_string = await encode(string)
         link = f"https://t.me/{client.username}?start={base64_string}"
 
-        res_groups[res].append((file_name, link))
+        res_groups[res].append((res, link))
 
     # Caption Construction
     title = details['title']
-    rating = details['rating']
-    genres = ", ".join(details['genres'])
+    audios_str = ", ".join(sorted(list(audio_tracks))) if audio_tracks else "Not Specified"
 
-    caption = f"<b>🍿 <u>{title}</u></b>\n\n"
-    caption += f"<b>⭐ Rᴀᴛɪɴɢ:</b> <code>{rating}/10</code>\n"
-    caption += f"<b>🎭 Gᴇɴʀᴇs:</b> <code>{genres}</code>\n\n"
+    # Try to find common format info in file names if available
+    res_info = "720p BluRay x264 + x265 HEVC Multi Audio"
+    for file in files:
+        if '1080p' in file['file_name'].lower():
+             res_info = "1080p BluRay x264 + x265 HEVC Multi Audio"
+             break
+        elif '2160p' in file['file_name'].lower() or '4k' in file['file_name'].lower():
+             res_info = "2160p 4K UHD BluRay Multi Audio"
+             break
 
-    for res, items in sorted(res_groups.items()):
-        caption += f"<b>━━━━━━━━━━━━━━━━━━━━━━</b>\n"
-        caption += f"<b>      📥 {res} Lɪɴᴋs</b>\n"
-        caption += f"<b>━━━━━━━━━━━━━━━━━━━━━━</b>\n"
-        for name, link in items:
-            # Shorten name if too long for caption
-            short_name = name[:50] + "..." if len(name) > 50 else name
-            caption += f"⚡️ <a href='{link}'>{short_name}</a>\n"
-        caption += "\n"
+    caption = f"<b>{title} ({year}) {res_info}\n\n"
+    caption += f"> Audio Tracks: {audios_str} </b>"
+
+    # Button Construction
+    buttons = []
+    # Collect all resolution links
+    for res in sorted(res_groups.keys()):
+        row = []
+        for res_label, link in res_groups[res]:
+            row.append(InlineKeyboardButton(res_label, url=link))
+            if len(row) == 2:
+                buttons.append(row)
+                row = []
+        if row:
+            buttons.append(row)
+
+    # Add How To Download button
+    buttons.append([InlineKeyboardButton("How To Download", url=TUT_VID)])
 
     # Truncate if over 1024 characters
     if len(caption) > 1024:
@@ -77,11 +99,12 @@ async def post_command(client: Bot, message: Message):
     target_chat = POST_CHANNEL_ID if POST_CHANNEL_ID else message.chat.id
 
     try:
-        if details['poster_url']:
+        if details.get('backdrop_url'):
             post = await client.send_photo(
                 chat_id=target_chat,
-                photo=details['poster_url'],
-                caption=caption
+                photo=details['backdrop_url'],
+                caption=caption,
+                reply_markup=InlineKeyboardMarkup(buttons)
             )
         else:
             post = await client.send_message(

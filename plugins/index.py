@@ -55,15 +55,35 @@ async def index_command(client: Bot, message: Message):
             file_type = "document"
             file_id = msg.document.file_id
         elif msg.video:
-            file_name = msg.video.file_name or "Video"
+            file_name = msg.video.file_name or (msg.caption.split('\n')[0] if msg.caption else "Video")
             file_size = msg.video.file_size
             file_type = "video"
             file_id = msg.video.file_id
         elif msg.audio:
-            file_name = msg.audio.file_name
+            file_name = msg.audio.file_name or (msg.caption.split('\n')[0] if msg.caption else "Audio")
             file_size = msg.audio.file_size
             file_type = "audio"
             file_id = msg.audio.file_id
+        elif msg.photo:
+            file_name = (msg.caption.split('\n')[0] if msg.caption else "Photo")
+            file_size = msg.photo.file_size
+            file_type = "photo"
+            file_id = msg.photo.file_id
+        elif msg.animation:
+            file_name = msg.animation.file_name or (msg.caption.split('\n')[0] if msg.caption else "Animation")
+            file_size = msg.animation.file_size
+            file_type = "animation"
+            file_id = msg.animation.file_id
+        elif msg.voice:
+            file_name = (msg.caption.split('\n')[0] if msg.caption else "Voice")
+            file_size = msg.voice.file_size
+            file_type = "voice"
+            file_id = msg.voice.file_id
+        elif msg.video_note:
+            file_name = "Video Note"
+            file_size = msg.video_note.file_size
+            file_type = "video_note"
+            file_id = msg.video_note.file_id
         else:
             unsupported += 1
             continue

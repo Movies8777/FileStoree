@@ -7,6 +7,9 @@ from pyrogram.types import ReplyKeyboardMarkup, ReplyKeyboardRemove
 import asyncio
 from pyrogram.errors import FloodWait
 from helper_func import encode, get_message_id, admin
+from config import LOGGER
+
+logger = LOGGER(__name__)
 
 @Bot.on_message(filters.private & admin & filters.command('batch'))
 async def batch(client: Client, message: Message):
@@ -39,6 +42,7 @@ async def batch(client: Client, message: Message):
     base64_string = await encode(string)
     link = f"https://t.me/{client.username}?start={base64_string}"
     await second_message.reply_text(f"<b>Here is your link</b>\n\n{link}", quote=True)
+    logger.info(f"User {message.from_user.id} generated a batch link: {f_msg_id} to {s_msg_id}")
 
 
 @Bot.on_message(filters.private & admin & filters.command('genlink'))
@@ -64,6 +68,7 @@ async def link_generator(client: Client, message: Message):
     base64_string = await encode(f"get-{msg_id * abs(client.db_channel.id)}")
     link = f"https://t.me/{client.username}?start={base64_string}"
     await reply_text.edit(f"<b>Here is your link</b>\n\n{link}", disable_web_page_preview = True)
+    logger.info(f"User {message.from_user.id} generated a link for msg_id {msg_id}")
 
 
 @Bot.on_message(filters.private & admin & filters.command("custom_batch"))
@@ -106,3 +111,4 @@ async def custom_batch(client: Client, message: Message):
     link = f"https://t.me/{client.username}?start={base64_string}"
 
     await message.reply(f"<b>Here is your custom batch link:</b>\n\n{link}")
+    logger.info(f"User {message.from_user.id} generated a custom batch link with {len(collected)} messages")

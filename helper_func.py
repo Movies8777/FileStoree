@@ -6,7 +6,7 @@ import re
 import asyncio
 import time
 from pyrogram import filters
-from pyrogram.enums import ChatMemberStatus
+from pyrogram.enums import ChatMemberStatus, MessageOriginType
 from config import *
 from pyrogram.errors.exceptions.bad_request_400 import UserNotParticipant
 from shortzy import Shortzy
@@ -156,12 +156,10 @@ async def get_messages(client, message_ids):
     return messages
 
 async def get_message_id(client, message):
-    if message.forward_from_chat:
-        if message.forward_from_chat.id == client.db_channel.id:
-            return message.forward_from_message_id
-        else:
-            return 0
-    elif message.forward_sender_name:
+    if message.forward_origin:
+        if message.forward_origin.type == MessageOriginType.CHANNEL:
+            if message.forward_origin.chat.id == client.db_channel.id:
+                return message.forward_origin.message_id
         return 0
     elif message.text:
         pattern = "https://t.me/(?:c/)?(.*)/(\d+)"

@@ -236,7 +236,7 @@ async def start_command(client: Client, message: Message):
             ]
         ]
 
-        if await check_admin(None, client, message):
+        if await admin(client, message):
             buttons.append([InlineKeyboardButton("ᴀᴅᴍɪɴ ᴄᴏᴍᴍᴀɴᴅs", callback_data="admin_cmds")])
 
         reply_markup = InlineKeyboardMarkup(buttons)

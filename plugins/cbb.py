@@ -11,6 +11,7 @@ from pyrogram import Client
 from bot import Bot
 from config import *
 from pyrogram.types import Message, InlineKeyboardMarkup, InlineKeyboardButton, CallbackQuery
+from pyrogram.errors import MessageNotModified
 from database.database import *
 from helper_func import *
 
@@ -29,7 +30,7 @@ async def cb_handler(client: Bot, query: CallbackQuery):
     data = query.data
 
     if data == "admin_cmds":
-        if not await check_admin(None, client, query):
+        if not await admin(client, query):
             return await query.answer("You are not authorized to view this!", show_alert=True)
         await query.message.edit_text(
             text=CMD_TXT,
@@ -67,7 +68,7 @@ async def cb_handler(client: Bot, query: CallbackQuery):
                 InlineKeyboardButton("ᴀʙᴏᴜᴛ", callback_data='about')
             ]
         ]
-        if await check_admin(None, client, query):
+        if await admin(client, query):
             buttons.append([InlineKeyboardButton("ᴀᴅᴍɪɴ ᴄᴏᴍᴍᴀɴᴅs", callback_data="admin_cmds")])
 
         await query.message.edit_text(

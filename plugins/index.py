@@ -4,7 +4,7 @@ from pyrogram import Client, filters
 from pyrogram.types import Message
 from pyrogram.errors import FloodWait
 from bot import Bot
-from config import ADMINS, CHANNEL_ID, LOGGER
+from config import CHANNEL_ID, LOGGER
 from helper_func import admin
 from database.database import db
 import asyncio

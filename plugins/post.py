@@ -55,12 +55,14 @@ async def post_command(client: Bot, message: Message):
     rating = details['rating']
     genres = ", ".join(details['genres'])
 
-    caption = f"<b>🍿 {title}</b>\n\n"
-    caption += f"<b>⭐ Rᴀᴛɪɴɢ:</b> {rating}/10\n"
-    caption += f"<b>🎭 Gᴇɴʀᴇs:</b> {genres}\n\n"
+    caption = f"<b>🍿 <u>{title}</u></b>\n\n"
+    caption += f"<b>⭐ Rᴀᴛɪɴɢ:</b> <code>{rating}/10</code>\n"
+    caption += f"<b>🎭 Gᴇɴʀᴇs:</b> <code>{genres}</code>\n\n"
 
     for res, items in sorted(res_groups.items()):
-        caption += f"<b>━━━━━━━━━━━━━━━━━━━━━━\n📥 {res} Lɪɴᴋs\n━━━━━━━━━━━━━━━━━━━━━━</b>\n"
+        caption += f"<b>━━━━━━━━━━━━━━━━━━━━━━</b>\n"
+        caption += f"<b>      📥 {res} Lɪɴᴋs</b>\n"
+        caption += f"<b>━━━━━━━━━━━━━━━━━━━━━━</b>\n"
         for name, link in items:
             # Shorten name if too long for caption
             short_name = name[:50] + "..." if len(name) > 50 else name

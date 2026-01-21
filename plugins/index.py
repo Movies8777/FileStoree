@@ -179,11 +179,24 @@ async def index_command(client: Bot, message: Message):
         if current % 100 == 0:
             try:
                 await waiting_msg.edit_text(
-                    text=f"Successfully saved <code>{total_files}</code> to database!\nDuplicate Files Skipped: <code>{duplicate}</code>\nDeleted Messages Skipped: <code>{deleted}</code>\nNon-Media messages skipped: <code>{no_media + unsupported}</code>(Unsupported Media - <code>{unsupported}</code>)"
+                    text=(
+                        "<b>✨ <u>ɪɴᴅᴇxɪɴɢ ɪɴ ᴘʀᴏɢʀᴇss...</u></b>\n\n"
+                        f"<b>📂 sᴀᴠᴇᴅ:</b> <code>{total_files}</code>\n"
+                        f"<b>⏩ sᴋɪᴘᴘᴇᴅ:</b> <code>{duplicate}</code> (ᴅᴜᴘʟɪᴄᴀᴛᴇ)\n"
+                        f"<b>🗑️ ᴅᴇʟᴇᴛᴇᴅ:</b> <code>{deleted}</code>\n"
+                        f"<b>🚫 ᴏᴛʜᴇʀs:</b> <code>{no_media + unsupported}</code>\n"
+                    )
                 )
             except:
                 pass
 
     await waiting_msg.edit_text(
-        text=f"Successfully saved <code>{total_files}</code> to database!\nDuplicate Files Skipped: <code>{duplicate}</code>\nDeleted Messages Skipped: <code>{deleted}</code>\nNon-Media messages skipped: <code>{no_media + unsupported}</code>(Unsupported Media - <code>{unsupported}</code>)"
+        text=(
+            "<b>✅ <u>ɪɴᴅᴇxɪɴɢ ᴄᴏᴍᴘʟᴇᴛᴇᴅ</u></b>\n\n"
+            f"<b>📂 ᴛᴏᴛᴀʟ sᴀᴠᴇᴅ:</b> <code>{total_files}</code>\n"
+            f"<b>⏩ sᴋɪᴘᴘᴇᴅ:</b> <code>{duplicate}</code> (ᴅᴜᴘʟɪᴄᴀᴛᴇ)\n"
+            f"<b>🗑️ ᴅᴇʟᴇᴛᴇᴅ:</b> <code>{deleted}</code>\n"
+            f"<b>🚫 ᴏᴛʜᴇʀs:</b> <code>{no_media + unsupported}</code>\n"
+            f"<b>❌ ᴇʀʀᴏʀs:</b> <code>{errors}</code>"
+        )
     )

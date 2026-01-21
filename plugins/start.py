@@ -29,7 +29,7 @@ from pyrogram.errors.exceptions.bad_request_400 import UserNotParticipant
 from pyrogram.errors import FloodWait, UserIsBlocked, InputUserDeactivated
 from bot import Bot
 from config import *
-from helper_func import *
+from helper_func import is_admin, is_subscribed, decode, get_messages, get_exp_time, wrap_with_redirect, get_shortlink
 from database.database import *
 from database.db_premium import *
 
@@ -236,7 +236,7 @@ async def start_command(client: Client, message: Message):
             ]
         ]
 
-        if await admin(client, message):
+        if await is_admin(message.from_user.id):
             buttons.append([InlineKeyboardButton("ᴀᴅᴍɪɴ ᴄᴏᴍᴍᴀɴᴅs", callback_data="admin_cmds")])
 
         reply_markup = InlineKeyboardMarkup(buttons)

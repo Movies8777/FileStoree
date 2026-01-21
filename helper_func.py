@@ -28,13 +28,17 @@ from database.database import *
 #
 
 #used for cheking if a user is admin ~Owner also treated as admin level
-async def check_admin(filter, client, update):
+async def is_admin(user_id: int):
     try:
-        user_id = update.from_user.id       
         return any([user_id == OWNER_ID, await db.admin_exist(user_id)])
     except Exception as e:
-        print(f"! Exception in check_admin: {e}")
+        print(f"! Exception in is_admin: {e}")
         return False
+
+async def check_admin(filter, client, update):
+    if not update.from_user:
+        return False
+    return await is_admin(update.from_user.id)
 
 
 # Don't Remove Credit @CodeFlix_Bots, @rohit_1888

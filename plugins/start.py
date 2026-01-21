@@ -225,18 +225,21 @@ async def start_command(client: Client, message: Message):
                 pass
 
     else:
-        reply_markup = InlineKeyboardMarkup(
-    [
-        [
-            InlineKeyboardButton("мσνιє'ѕ", url="https://t.me/Movies8777"),
-            InlineKeyboardButton("нєηαтєє", url="https://t.me/+1epnsIzoCx43YTk1")
-        ],
-        [
-            InlineKeyboardButton("ᴀʙᴏᴜᴛ", callback_data="about"),
-            InlineKeyboardButton("ʜᴇʟᴘ", callback_data="help")
+        buttons = [
+            [
+                InlineKeyboardButton("мσνιє'ѕ", url="https://t.me/Movies8777"),
+                InlineKeyboardButton("нєηαтєє", url="https://t.me/+1epnsIzoCx43YTk1")
+            ],
+            [
+                InlineKeyboardButton("ᴀʙᴏᴜᴛ", callback_data="about"),
+                InlineKeyboardButton("ʜᴇʟᴘ", callback_data="help")
+            ]
         ]
-    ]
-)
+
+        if await check_admin(None, client, message):
+            buttons.append([InlineKeyboardButton("ᴀᴅᴍɪɴ ᴄᴏᴍᴍᴀɴᴅs", callback_data="admin_cmds")])
+
+        reply_markup = InlineKeyboardMarkup(buttons)
         caption = START_MSG.format(
             first=message.from_user.first_name,
             last=message.from_user.last_name,
@@ -244,9 +247,6 @@ async def start_command(client: Client, message: Message):
             mention=message.from_user.mention,
             id=message.from_user.id
         )
-
-        if await check_admin(None, client, message):
-            caption += f"\n\n{CMD_TXT}"
 
         await message.reply_photo(
             photo=START_PIC,

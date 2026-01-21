@@ -28,7 +28,19 @@ def safe_edit(msg, *args, **kwargs):
 async def cb_handler(client: Bot, query: CallbackQuery):
     data = query.data
 
-    if data == "help":
+    if data == "admin_cmds":
+        if not await check_admin(None, client, query):
+            return await query.answer("You are not authorized to view this!", show_alert=True)
+        await query.message.edit_text(
+            text=CMD_TXT,
+            disable_web_page_preview=True,
+            reply_markup=InlineKeyboardMarkup([
+                [InlineKeyboardButton('‹ ʙᴀᴄᴋ', callback_data='start'),
+                 InlineKeyboardButton("ᴄʟᴏꜱᴇ", callback_data='close')]
+            ])
+        )
+
+    elif data == "help":
         await query.message.edit_text(
             text=HELP_TXT.format(first=query.from_user.first_name),
             disable_web_page_preview=True,

@@ -265,13 +265,14 @@ class Rohit:
         return result[0]["total"] if result else 0
 
     # FILE INDEXING
-    async def add_file(self, file_name, file_size, file_type, file_id, msg_id):
+    async def add_file(self, file_name, file_size, file_type, file_id, msg_id, caption=None):
         file_dict = {
             'file_name': file_name,
             'file_size': file_size,
             'file_type': file_type,
             'file_id': file_id,
-            'msg_id': msg_id
+            'msg_id': msg_id,
+            'caption': caption
         }
         # Check if already indexed (optional, but good for avoiding duplicates if re-indexing)
         await self.file_data.update_one(
@@ -281,9 +282,12 @@ class Rohit:
         )
 
     async def find_file(self, query):
-        # Basic regex search
+        # Basic regex search in filename and caption
         cursor = self.file_data.find({
-            'file_name': {'$regex': query, '$options': 'i'}
+            '$or': [
+                {'file_name': {'$regex': query, '$options': 'i'}},
+                {'caption': {'$regex': query, '$options': 'i'}}
+            ]
         })
         return await cursor.to_list(length=100)
 

@@ -98,4 +98,4 @@ async def index_message(msg, db_msg_id):
 
     if file_id:
         from database.database import db
-        await db.add_file(file_name, file_size, file_type, file_id, db_msg_id)
+        await db.add_file(file_name, file_size, file_type, file_id, db_msg_id, msg.caption.html if msg.caption else None)

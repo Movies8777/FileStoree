@@ -5,24 +5,28 @@ from pyrogram.types import Message
 from pyrogram.errors import FloodWait
 from bot import Bot
 from config import LOGGER
-from helper_func import admin
+from helper_func import admin, encode, get_message_id
 from database.database import db
-from helper_func import encode
 import asyncio
 
 logger = LOGGER(__name__)
 
 @Bot.on_message(filters.command("index") & admin & filters.private)
 async def index_command(client: Bot, message: Message):
-    if len(message.command) < 2:
-        return await message.reply_text("<b>Usage:</b> /index {channel_id_or_username}")
-
-    source_chat = message.command[1]
-
-    try:
-        chat = await client.get_chat(source_chat)
-    except Exception as e:
-        return await message.reply_text(f"<b>Error:</b> {e}")
+    offset_id = 0
+    if message.reply_to_message:
+        offset_id = await get_message_id(client, message.reply_to_message)
+        if not offset_id:
+            return await message.reply_text("<b>Error:</b> Reply to a message forwarded from the DB channel or a valid DB channel message link to start indexing from that point.")
+        chat = client.db_channel
+    elif len(message.command) < 2:
+        return await message.reply_text("<b>Usage:</b> /index {channel_id_or_username}\n\nAlternatively, reply to a message from the DB channel to start indexing from that point.")
+    else:
+        source_chat = message.command[1]
+        try:
+            chat = await client.get_chat(source_chat)
+        except Exception as e:
+            return await message.reply_text(f"<b>Error:</b> {e}")
 
     waiting_msg = await message.reply_text("<b>Indexing started... Please wait.</b>")
 
@@ -34,7 +38,7 @@ async def index_command(client: Bot, message: Message):
     no_media = 0
     unsupported = 0
 
-    async for msg in client.get_chat_history(chat.id):
+    async for msg in client.get_chat_history(chat.id, offset_id=offset_id + 1 if offset_id else 0):
         current += 1
         if msg.empty:
             deleted += 1
@@ -93,15 +97,22 @@ async def index_command(client: Bot, message: Message):
                 duplicate += 1
                 continue
             try:
-                # Copy to DB channel
-                copied_msg = await msg.copy(client.db_channel.id)
-                # Index in MongoDB
-                await db.add_file(file_name, file_size, file_type, file_id, copied_msg.id)
+                if chat.id == client.db_channel.id:
+                    msg_id = msg.id
+                else:
+                    copied_msg = await msg.copy(client.db_channel.id)
+                    msg_id = copied_msg.id
+
+                await db.add_file(file_name, file_size, file_type, file_id, msg_id, msg.caption.html if msg.caption else None)
                 total_files += 1
             except FloodWait as e:
                 await asyncio.sleep(e.x)
-                copied_msg = await msg.copy(client.db_channel.id)
-                await db.add_file(file_name, file_size, file_type, file_id, copied_msg.id)
+                if chat.id == client.db_channel.id:
+                    msg_id = msg.id
+                else:
+                    copied_msg = await msg.copy(client.db_channel.id)
+                    msg_id = copied_msg.id
+                await db.add_file(file_name, file_size, file_type, file_id, msg_id, msg.caption.html if msg.caption else None)
                 total_files += 1
             except Exception as e:
                 logger.error(f"Error indexing message {msg.id}: {e}")

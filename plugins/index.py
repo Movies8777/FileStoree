@@ -11,7 +11,7 @@ from database.database import db
 
 logger = LOGGER(__name__)
 
-@Bot.on_message(filters.chat(CHANNEL_ID) & filters.media)
+@Bot.on_message(filters.chat(CHANNEL_ID) & filters.media & ~filters.me)
 async def auto_index(client: Bot, message: Message):
     # Determine file details
     file_name = "Unknown"
@@ -63,7 +63,7 @@ async def auto_index(client: Bot, message: Message):
                 file_type=file_type,
                 file_id=file_id,
                 msg_id=message.id,
-                caption=message.caption.html if message.caption else None
+                caption=message.caption if message.caption else None
             )
             logger.info(f"Auto-indexed file: {file_name} (ID: {message.id})")
         except Exception as e:
@@ -161,7 +161,7 @@ async def index_command(client: Bot, message: Message):
                     copied_msg = await msg.copy(client.db_channel.id)
                     msg_id = copied_msg.id
 
-                await db.add_file(file_name, file_size, file_type, file_id, msg_id, msg.caption.html if msg.caption else None)
+                await db.add_file(file_name, file_size, file_type, file_id, msg_id, msg.caption if msg.caption else None)
                 total_files += 1
             except FloodWait as e:
                 await asyncio.sleep(e.x)
@@ -170,7 +170,7 @@ async def index_command(client: Bot, message: Message):
                 else:
                     copied_msg = await msg.copy(client.db_channel.id)
                     msg_id = copied_msg.id
-                await db.add_file(file_name, file_size, file_type, file_id, msg_id, msg.caption.html if msg.caption else None)
+                await db.add_file(file_name, file_size, file_type, file_id, msg_id, msg.caption if msg.caption else None)
                 total_files += 1
             except Exception as e:
                 logger.error(f"Error indexing message {msg.id}: {e}")

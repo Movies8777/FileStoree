@@ -32,11 +32,19 @@ from database.database import db
 async def stats(bot: Bot, message: Message):
     files = await db.total_files()
     users = len(await db.full_userbase())
+    verify = await db.get_total_verify_count()
     now = datetime.now()
     delta = now - bot.uptime
     uptime = get_readable_time(delta.seconds)
 
-    text = f"📁 Files: <code>{files}</code> | 👥 Users: <code>{users}</code> | 📊 Status: <code>High</code>\n\n<b>BOT UPTIME:</b> <code>{uptime}</code>"
+    text = (
+        "<b>📊 ʙᴏᴛ sᴛᴀᴛɪsᴛɪᴄs</b>\n\n"
+        f"📁 ᴛᴏᴛᴀʟ ғɪʟᴇs: <code>{files}</code>\n"
+        f"👥 ᴛᴏᴛᴀʟ ᴜsᴇʀs: <code>{users}</code>\n"
+        f"✅ ᴛᴏᴛᴀʟ ᴠᴇʀɪғʏ: <code>{verify}</code>\n"
+        f"⏳ ʙᴏᴛ ᴜᴘᴛɪᴍᴇ: <code>{uptime}</code>\n\n"
+        "<b>🛡️ sᴛᴀᴛᴜs: ᴏɴʟɪɴᴇ [ʜɪɢʜ]</b>"
+    )
     await message.reply_text(text)
 
 

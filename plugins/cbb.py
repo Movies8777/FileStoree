@@ -61,13 +61,19 @@ async def cb_handler(client: Bot, query: CallbackQuery):
         )
 
     elif data == "start":
+        buttons = [
+            [
+                InlineKeyboardButton("ʜᴇʟᴘ", callback_data='help'),
+                InlineKeyboardButton("ᴀʙᴏᴜᴛ", callback_data='about')
+            ]
+        ]
+        if await check_admin(None, client, query):
+            buttons.append([InlineKeyboardButton("ᴀᴅᴍɪɴ ᴄᴏᴍᴍᴀɴᴅs", callback_data="admin_cmds")])
+
         await query.message.edit_text(
             text=START_MSG.format(first=query.from_user.first_name),
             disable_web_page_preview=True,
-            reply_markup=InlineKeyboardMarkup([
-                [InlineKeyboardButton("ʜᴇʟᴘ", callback_data='help'),
-                 InlineKeyboardButton("ᴀʙᴏᴜᴛ", callback_data='about')]
-            ])
+            reply_markup=InlineKeyboardMarkup(buttons)
         )
 
 

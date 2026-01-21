@@ -7,7 +7,7 @@ from helper_func import is_subscribed, encode
 from database.database import db
 import asyncio
 
-@Bot.on_message(filters.private & filters.text & ~filters.command)
+@Bot.on_message(filters.private & filters.text & ~filters.regex("^/"))
 async def search_handler(client: Client, message: Message):
     # Check force sub
     if not await is_subscribed(client, message.from_user.id):

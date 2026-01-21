@@ -2,7 +2,7 @@ import re
 from pyrogram import Client, filters
 from pyrogram.types import Message, InlineKeyboardMarkup, InlineKeyboardButton
 from bot import Bot
-from config import ADMINS, CHANNEL_ID, LOGGER
+from config import CHANNEL_ID, LOGGER, POST_CHANNEL_ID
 from helper_func import admin, encode
 from database.database import db
 from plugins.tmdb import search_tmdb, get_movie_details
@@ -71,13 +71,29 @@ async def post_command(client: Bot, message: Message):
     if len(caption) > 1024:
         caption = caption[:1020] + "..."
 
-    if details['poster_url']:
-        await client.send_photo(
-            chat_id=message.chat.id,
-            photo=details['poster_url'],
-            caption=caption
-        )
-    else:
-        await message.reply_text(caption)
+    # Send to Post Channel and also to the user who requested
+    target_chat = POST_CHANNEL_ID if POST_CHANNEL_ID else message.chat.id
+
+    try:
+        if details['poster_url']:
+            post = await client.send_photo(
+                chat_id=target_chat,
+                photo=details['poster_url'],
+                caption=caption
+            )
+        else:
+            post = await client.send_message(
+                chat_id=target_chat,
+                text=caption
+            )
+
+        if target_chat != message.chat.id:
+            await message.reply_text(f"<b>Pᴏsᴛ Sᴇɴᴛ ᴛᴏ <a href='https://t.me/c/{str(abs(target_chat))[3:]}/{post.id}'>Cʜᴀɴɴᴇʟ</a>!</b>")
+        else:
+            await search_msg.edit("<b>Pᴏsᴛ Gᴇɴᴇʀᴀᴛᴇᴅ!</b>")
+
+    except Exception as e:
+        logger.error(f"Error sending post: {e}")
+        await message.reply_text(f"<b>Eʀʀᴏʀ:</b> {e}")
 
     await search_msg.delete()

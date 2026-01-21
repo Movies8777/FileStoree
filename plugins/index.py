@@ -111,29 +111,3 @@ async def stats_command(client: Bot, message: Message):
 <b>Total Files Indexed:</b> <code>{files}</code>
 """
     await message.reply_text(text)
-
-
-@Bot.on_message(filters.command("search") & admin & filters.private)
-async def search_command(client: Bot, message: Message):
-    if len(message.command) < 2:
-        return await message.reply_text("<b>Usage:</b> /search {file_name}")
-
-    query = " ".join(message.command[1:])
-    results = await db.find_file(query)
-
-    if not results:
-        return await message.reply_text("<b>No files found matching your search.</b>")
-
-    text = f"<b>🔍 Search Results for:</b> <code>{query}</code>\n\n"
-    for file in results[:10]: # Limit to 10 for display
-        base64_string = await encode(f"get-{file['msg_id'] * abs(client.db_channel.id)}")
-        link = f"https://t.me/{client.username}?start={base64_string}"
-
-        text += f"<b>📄 Name:</b> <code>{file['file_name']}</code>\n"
-        text += f"<b>📏 Size:</b> <code>{file['file_size']} bytes</code>\n"
-        text += f"<b>🔗 Link:</b> {link}\n\n"
-
-    if len(results) > 10:
-        text += f"<i>...and {len(results) - 10} more results.</i>"
-
-    await message.reply_text(text, disable_web_page_preview=True)

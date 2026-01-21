@@ -32,9 +32,8 @@ async def cb_handler(client: Bot, query: CallbackQuery):
     if data == "admin_cmds":
         if not await is_admin(query.from_user.id):
             return await query.answer("You are not authorized to view this!", show_alert=True)
-        await query.message.edit_text(
-            text=CMD_TXT,
-            disable_web_page_preview=True,
+        await query.message.edit_caption(
+            caption=CMD_TXT,
             reply_markup=InlineKeyboardMarkup([
                 [InlineKeyboardButton('‹ ʙᴀᴄᴋ', callback_data='start'),
                  InlineKeyboardButton("ᴄʟᴏꜱᴇ", callback_data='close')]
@@ -42,9 +41,8 @@ async def cb_handler(client: Bot, query: CallbackQuery):
         )
 
     elif data == "help":
-        await query.message.edit_text(
-            text=HELP_TXT.format(first=query.from_user.first_name),
-            disable_web_page_preview=True,
+        await query.message.edit_caption(
+            caption=HELP_TXT.format(first=query.from_user.first_name),
             reply_markup=InlineKeyboardMarkup([
                 [InlineKeyboardButton('ʜᴏᴍᴇ', callback_data='start'),
                  InlineKeyboardButton("ᴄʟᴏꜱᴇ", callback_data='close')]
@@ -52,9 +50,8 @@ async def cb_handler(client: Bot, query: CallbackQuery):
         )
 
     elif data == "about":
-        await query.message.edit_text(
-            text=ABOUT_TXT.format(first=query.from_user.first_name),
-            disable_web_page_preview=True,
+        await query.message.edit_caption(
+            caption=ABOUT_TXT.format(first=query.from_user.first_name),
             reply_markup=InlineKeyboardMarkup([
                 [InlineKeyboardButton('ʜᴏᴍᴇ', callback_data='start'),
                  InlineKeyboardButton('ᴄʟᴏꜱᴇ', callback_data='close')]
@@ -71,9 +68,8 @@ async def cb_handler(client: Bot, query: CallbackQuery):
         if await is_admin(query.from_user.id):
             buttons.append([InlineKeyboardButton("ᴀᴅᴍɪɴ ᴄᴏᴍᴍᴀɴᴅs", callback_data="admin_cmds")])
 
-        await query.message.edit_text(
-            text=START_MSG.format(first=query.from_user.first_name),
-            disable_web_page_preview=True,
+        await query.message.edit_caption(
+            caption=START_MSG.format(first=query.from_user.first_name),
             reply_markup=InlineKeyboardMarkup(buttons)
         )
 

@@ -59,7 +59,6 @@ CMD_TXT = """<blockquote><b>» ᴀᴅᴍɪɴ ᴄᴏᴍᴍᴀɴᴅs:</b></blockqu
 
 <b>›› /genlink (reply) :</b> ɢᴇɴᴇʀᴀᴛᴇ ʟɪɴᴋ ʙʏ ʀᴇᴘʟʏɪɴɢ ᴛᴏ ᴍᴇssᴀɢᴇ
 <b>›› /batch :</b> ɢᴇɴᴇʀᴀᴛᴇ ʙᴀᴛᴄʜ ʟɪɴᴋs
-<b>›› /custom_batch :</b> ᴄᴜsᴛᴏᴍ ʙᴀᴛᴄʜ ʟɪɴᴋ ɢᴇɴᴇʀᴀᴛᴏʀ
 <b>›› /dlt_time :</b> sᴇᴛ ᴀᴜᴛᴏ ᴅᴇʟᴇᴛᴇ ᴛɪᴍᴇ
 <b>›› /check_dlt_time :</b> ᴄʜᴇᴄᴋ ᴄᴜʀʀᴇɴᴛ ᴅᴇʟᴇᴛᴇ ᴛɪᴍᴇ
 <b>›› /dbroadcast :</b> ʙʀᴏᴀᴅᴄᴀsᴛ ᴅᴏᴄᴜᴍᴇɴᴛ / ᴠɪᴅᴇᴏ

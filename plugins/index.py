@@ -7,6 +7,7 @@ from bot import Bot
 from config import CHANNEL_ID, LOGGER
 from helper_func import admin
 from database.database import db
+from helper_func import encode
 import asyncio
 
 logger = LOGGER(__name__)
@@ -103,7 +104,6 @@ async def search_command(client: Bot, message: Message):
 
     text = f"<b>🔍 Search Results for:</b> <code>{query}</code>\n\n"
     for file in results[:10]: # Limit to 10 for display
-        from helper_func import encode
         base64_string = await encode(f"get-{file['msg_id'] * abs(client.db_channel.id)}")
         link = f"https://t.me/{client.username}?start={base64_string}"
 

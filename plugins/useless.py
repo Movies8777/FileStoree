@@ -23,8 +23,8 @@ from pyrogram.errors.exceptions.bad_request_400 import UserNotParticipant
 from pyrogram.errors import FloodWait, UserIsBlocked, InputUserDeactivated, UserNotParticipant
 from bot import Bot
 from config import *
-from helper_func import *
-from database.database import *
+from helper_func import is_admin, get_readable_time, admin
+from database.database import db
 
 #=====================================================================================##
 
@@ -32,8 +32,11 @@ from database.database import *
 async def stats(bot: Bot, message: Message):
     files = await db.total_files()
     users = len(await db.full_userbase())
+    now = datetime.now()
+    delta = now - bot.uptime
+    uptime = get_readable_time(delta.seconds)
 
-    text = f"📁 Files: <code>{files}</code> | 👥 Users: <code>{users}</code> | 📊 Status: <code>High</code>"
+    text = f"📁 Files: <code>{files}</code> | 👥 Users: <code>{users}</code> | 📊 Status: <code>High</code>\n\n<b>BOT UPTIME:</b> <code>{uptime}</code>"
     await message.reply_text(text)
 
 

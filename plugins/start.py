@@ -29,7 +29,7 @@ from pyrogram.errors.exceptions.bad_request_400 import UserNotParticipant
 from pyrogram.errors import FloodWait, UserIsBlocked, InputUserDeactivated
 from bot import Bot
 from config import *
-from helper_func import is_admin, is_subscribed, decode, get_messages, get_exp_time, wrap_with_redirect, get_shortlink
+from helper_func import is_admin, is_subscribed, decode, get_messages, get_exp_time, wrap_with_redirect, get_shortlink, admin
 from database.database import *
 from database.db_premium import *
 

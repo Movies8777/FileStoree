@@ -90,20 +90,13 @@ async def index_command(client: Bot, message: Message):
         if current % 100 == 0:
             try:
                 await waiting_msg.edit_text(
-                    text=f"Succesfully saved <code>{total_files}</code> to dataBase!\nDuplicate Files Skipped: <code>{duplicate}</code>\nDeleted Messages Skipped: <code>{deleted}</code>\nNon-Media messages skipped: <code>{no_media + unsupported}</code>(Unsupported Media - <code>{unsupported}</code> )"
+                    text=f"Successfully saved <code>{total_files}</code> to database!\nDuplicate Files Skipped: <code>{duplicate}</code>\nDeleted Messages Skipped: <code>{deleted}</code>\nNon-Media messages skipped: <code>{no_media + unsupported}</code>(Unsupported Media - <code>{unsupported}</code>)"
                 )
             except:
                 pass
 
     await waiting_msg.edit_text(
-        text=f"Succesfully saved <code>{total_files}</code> to dataBase!\nDuplicate Files Skipped: <code>{duplicate}</code>\nDeleted Messages Skipped: <code>{deleted}</code>\nNon-Media messages skipped: <code>{no_media + unsupported}</code>(Unsupported Media - <code>{unsupported}</code> )"
+        text=f"Successfully saved <code>{total_files}</code> to database!\nDuplicate Files Skipped: <code>{duplicate}</code>\nDeleted Messages Skipped: <code>{deleted}</code>\nNon-Media messages skipped: <code>{no_media + unsupported}</code>(Unsupported Media - <code>{unsupported}</code>)"
     )
 
 
-@Bot.on_message(filters.command("stats") & admin & filters.private)
-async def stats_command(client: Bot, message: Message):
-    files = await db.total_files()
-    users = len(await db.full_userbase())
-
-    text = f"📁 Files: <code>{files}</code> | 👥 Users: <code>{users}</code> | 📊 Status: <code>High</code>"
-    await message.reply_text(text)

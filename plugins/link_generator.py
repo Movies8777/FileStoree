@@ -57,10 +57,13 @@ async def link_generator(client: Client, message: Message):
         try:
             post_message = await message.reply_to_message.copy(chat_id = client.db_channel.id, disable_notification=True)
             msg_id = post_message.id
+            # Index in MongoDB
+            await index_message(message.reply_to_message, msg_id)
         except FloodWait as e:
             await asyncio.sleep(e.x)
             post_message = await message.reply_to_message.copy(chat_id = client.db_channel.id, disable_notification=True)
             msg_id = post_message.id
+            await index_message(message.reply_to_message, msg_id)
         except Exception as e:
             print(e)
             return await reply_text.edit_text("Something went Wrong while copying to DB Channel..!")
@@ -69,6 +72,33 @@ async def link_generator(client: Client, message: Message):
     link = f"https://t.me/{client.username}?start={base64_string}"
     await reply_text.edit(f"<b>Here is your link</b>\n\n{link}", disable_web_page_preview = True)
     logger.info(f"User {message.from_user.id} generated a link for msg_id {msg_id}")
+
+
+async def index_message(msg, db_msg_id):
+    file_name = "Unknown"
+    file_size = 0
+    file_type = None
+    file_id = None
+
+    if msg.document:
+        file_name = msg.document.file_name
+        file_size = msg.document.file_size
+        file_type = "document"
+        file_id = msg.document.file_id
+    elif msg.video:
+        file_name = msg.video.file_name or "Video"
+        file_size = msg.video.file_size
+        file_type = "video"
+        file_id = msg.video.file_id
+    elif msg.audio:
+        file_name = msg.audio.file_name
+        file_size = msg.audio.file_size
+        file_type = "audio"
+        file_id = msg.audio.file_id
+
+    if file_id:
+        from database.database import db
+        await db.add_file(file_name, file_size, file_type, file_id, db_msg_id)
 
 
 @Bot.on_message(filters.private & admin & filters.command("custom_batch"))

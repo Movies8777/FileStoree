@@ -90,13 +90,13 @@ async def index_command(client: Bot, message: Message):
         if current % 100 == 0:
             try:
                 await waiting_msg.edit_text(
-                    text=f"Total messages fetched: <code>{current}</code>\nTotal messages saved: <code>{total_files}</code>\nDuplicate Files Skipped: <code>{duplicate}</code>\nDeleted Messages Skipped: <code>{deleted}</code>\nNon-Media messages skipped: <code>{no_media + unsupported}</code>(Unsupported Media - `{unsupported}` )\nErrors Occurred: <code>{errors}</code>"
+                    text=f"Succesfully saved <code>{total_files}</code> to dataBase!\nDuplicate Files Skipped: <code>{duplicate}</code>\nDeleted Messages Skipped: <code>{deleted}</code>\nNon-Media messages skipped: <code>{no_media + unsupported}</code>(Unsupported Media - <code>{unsupported}</code> )"
                 )
             except:
                 pass
 
     await waiting_msg.edit_text(
-        text=f"<b>Indexing Completed!</b>\n\nTotal messages fetched: <code>{current}</code>\nTotal messages saved: <code>{total_files}</code>\nDuplicate Files Skipped: <code>{duplicate}</code>\nDeleted Messages Skipped: <code>{deleted}</code>\nNon-Media messages skipped: <code>{no_media + unsupported}</code>(Unsupported Media - `{unsupported}` )\nErrors Occurred: <code>{errors}</code>"
+        text=f"Succesfully saved <code>{total_files}</code> to dataBase!\nDuplicate Files Skipped: <code>{duplicate}</code>\nDeleted Messages Skipped: <code>{deleted}</code>\nNon-Media messages skipped: <code>{no_media + unsupported}</code>(Unsupported Media - <code>{unsupported}</code> )"
     )
 
 
@@ -105,9 +105,5 @@ async def stats_command(client: Bot, message: Message):
     files = await db.total_files()
     users = len(await db.full_userbase())
 
-    text = f"""<b>📊 Bot Statistics</b>
-
-<b>Total Users:</b> <code>{users}</code>
-<b>Total Files Indexed:</b> <code>{files}</code>
-"""
+    text = f"📁 Files: <code>{files}</code> | 👥 Users: <code>{users}</code> | 📊 Status: <code>High</code>"
     await message.reply_text(text)

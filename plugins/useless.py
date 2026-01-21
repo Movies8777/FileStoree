@@ -30,10 +30,11 @@ from database.database import *
 
 @Bot.on_message(filters.command('stats') & admin)
 async def stats(bot: Bot, message: Message):
-    now = datetime.now()
-    delta = now - bot.uptime
-    time = get_readable_time(delta.seconds)
-    await message.reply(BOT_STATS_TEXT.format(uptime=time))
+    files = await db.total_files()
+    users = len(await db.full_userbase())
+
+    text = f"📁 Files: <code>{files}</code> | 👥 Users: <code>{users}</code> | 📊 Status: <code>High</code>"
+    await message.reply_text(text)
 
 
 #=====================================================================================##

@@ -33,6 +33,7 @@ async def get_movie_details(tmdb_id, media_type):
                     'genres': genres,
                     'title': data.get('title') or data.get('name'),
                     'overview': data.get('overview'),
-                    'release_date': release_date
+                    'release_date': release_date,
+                    'language': data.get('original_language', 'N/A').upper()
                 }
     return None

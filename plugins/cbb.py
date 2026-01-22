@@ -25,7 +25,7 @@ def safe_edit(msg, *args, **kwargs):
         pass
 
 
-@Bot.on_callback_query()
+@Bot.on_callback_query(group=1)
 async def cb_handler(client: Bot, query: CallbackQuery):
     data = query.data
 

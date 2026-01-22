@@ -107,9 +107,7 @@ async def show_image_selector(message, user_id):
 
     caption = (
         f"<b>{details['title']} ({details['release_date'][:4] if details['release_date'] else 'N/A'})</b>\n\n"
-        f"<b>• Type :</b> Clean Landscape\n"
-        f"<b>• Language:</b> N/A\n"
-        f"<b>• Width:</b> 2048, <b>Height:</b> 1152\n"
+        f"<b>• Language:</b> {details.get('language', 'N/A')}\n"
         f"<b>• [ <a href='{url}'>Click Here</a> ]</b>"
     )
 
@@ -164,9 +162,7 @@ async def image_selector_callback(client: Bot, query: CallbackQuery):
 
     caption = (
         f"<b>{details['title']} ({details['release_date'][:4] if details['release_date'] else 'N/A'})</b>\n\n"
-        f"<b>• Type :</b> Clean Landscape\n"
-        f"<b>• Language:</b> N/A\n"
-        f"<b>• Width:</b> 2048, <b>Height:</b> 1152\n"
+        f"<b>• Language:</b> {details.get('language', 'N/A')}\n"
         f"<b>• [ <a href='{url}'>Click Here</a> ]</b>"
     )
 

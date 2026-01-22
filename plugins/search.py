@@ -54,6 +54,8 @@ async def search_handler(client: Client, message: Message):
     else:
         text += f"<i>Fᴏᴜɴᴅ {len(files)} ʀᴇsᴜʟᴛs:</i>"
 
+    text += "\n\n<b><blockquote>⚠️ Fɪʟᴇs ᴡɪʟʟ ʙᴇ ᴅᴇʟᴇᴛᴇᴅ ɪɴ 10 ᴍɪɴᴜᴛᴇs ᴛᴏ ᴀᴠᴏɪᴅ ᴄᴏᴘʏʀɪɢʜᴛ! Sᴏ ᴅᴏᴡɴʟᴏᴀᴅ ғᴀsᴛ!</blockquote></b>"
+
     await search_msg.edit(
         text=text,
         reply_markup=InlineKeyboardMarkup(buttons)

@@ -50,6 +50,7 @@ class Rohit:
         self.rqst_fsub_data = self.database['request_forcesub']
         self.rqst_fsub_Channel_data = self.database['request_forcesub_channel']
         self.file_data = self.database['files']
+        self.ongoing_data = self.database['ongoing']
         
 
 
@@ -306,6 +307,35 @@ class Rohit:
 
     async def total_files(self):
         return await self.file_data.count_documents({})
+
+    # ONGOING SERIES DATA
+    async def add_ongoing(self, title, season, language, release_day, total_eps, current_ep, poster, qualities):
+        data = {
+            'title': title,
+            'season': season,
+            'language': language,
+            'release_day': release_day,
+            'total_eps': total_eps,
+            'current_ep': current_ep,
+            'poster': poster,
+            'qualities': qualities
+        }
+        await self.ongoing_data.update_one({'title': title}, {'$set': data}, upsert=True)
+
+    async def get_ongoing(self, title):
+        return await self.ongoing_data.find_one({'title': title})
+
+    async def update_ongoing_ep(self, title, new_ep):
+        await self.ongoing_data.update_one({'title': title}, {'$set': {'current_ep': new_ep}})
+
+    async def get_all_ongoing(self):
+        return await self.ongoing_data.find().to_list(length=None)
+
+    async def del_ongoing(self, title):
+        await self.ongoing_data.delete_one({'title': title})
+
+    async def total_ongoing_count(self):
+        return await self.ongoing_data.count_documents({})
 
 
 db = Rohit(DB_URI, DB_NAME)

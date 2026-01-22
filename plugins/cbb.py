@@ -83,12 +83,14 @@ async def cb_handler(client: Bot, query: CallbackQuery):
         total_users = await db.total_users_count()
         total_files = await db.total_files()
         total_verify = await db.get_total_verify_count()
+        total_ongoing = await db.total_ongoing_count()
 
         stats_msg = (
             "<b>📊 Bᴏᴛ Sᴛᴀᴛɪsᴛɪᴄs</b>\n\n"
-            f"<b>👤 Tᴏᴛᴀʟ Usᴇʀs:</b> <code>{total_users}</code>\n"
-            f"<b>📁 Tᴏᴛᴀʟ Fɪʟᴇs:</b> <code>{total_files}</code>\n"
-            f"<b>✅ Tᴏᴅᴀʏ Vᴇʀɪғɪᴇᴅ:</b> <code>{total_verify}</code>\n"
+            f"<b>👤 Tᴏᴛᴀʟ Usᴇʀs :</b> <code>{total_users}</code>\n"
+            f"<b>📁 Tᴏᴛᴀʟ Fɪʟᴇs :</b> <code>{total_files}</code>\n"
+            f"<b>✅ Tᴏᴅᴀʏ Vᴇʀɪғɪᴇᴅ :</b> <code>{total_verify}</code>\n"
+            f"<b>📺 Oɴɢᴏɪɴɢ Sᴇʀɪᴇs :</b> <code>{total_ongoing}</code>\n"
             "━━━━━━━━━━━━━━━━━━━━━━"
         )
 
@@ -226,6 +228,176 @@ async def cb_handler(client: Bot, query: CallbackQuery):
             f"Channel: {chat.title}\nCurrent Force-Sub Mode: {status}",
             reply_markup=InlineKeyboardMarkup(buttons)
         )
+
+    elif data.startswith("manage_ongoing_"):
+        title_prefix = data.replace("manage_ongoing_", "")
+        all_ongoing = await db.get_all_ongoing()
+        series = None
+        for s in all_ongoing:
+            if s['title'].startswith(title_prefix):
+                series = s
+                break
+
+        if not series:
+            return await query.answer("Series not found!", show_alert=True)
+
+        text = (f"<b>📺 Mᴀɴᴀɢɪɴɢ: {series['title']}</b>\n\n"
+                f"<b>Sᴇᴀsᴏɴ:</b> {series['season']}\n"
+                f"<b>ᴄᴜʀʀᴇɴᴛ Eᴘɪsᴏᴅᴇ:</b> {series['current_ep']}\n"
+                f"<b>Tᴏᴛᴀʟ Eᴘɪsᴏᴅᴇs:</b> {series['total_eps']}\n"
+                f"<b>Lᴀɴɢᴜᴀɢᴇ:</b> {series['language']}\n"
+                f"<b>Rᴇʟᴇᴀsᴇ Dᴀʏ:</b> {series['release_day']}")
+
+        buttons = [
+            [InlineKeyboardButton("📤 Pᴏsᴛ Nᴇxᴛ Eᴘɪsᴏᴅᴇ", callback_data=f"post_ongoing_{series['title'][:20]}")],
+            [InlineKeyboardButton("➕ Iɴᴄʀᴇᴍᴇɴᴛ Eᴘ", callback_data=f"inc_ep_{series['title'][:20]}"),
+             InlineKeyboardButton("➖ Dᴇᴄʀᴇᴍᴇɴᴛ Eᴘ", callback_data=f"dec_ep_{series['title'][:20]}")],
+            [InlineKeyboardButton("‹ ʙᴀᴄᴋ", callback_data="ongoing_list"),
+             InlineKeyboardButton("ᴄʟᴏsᴇ", callback_data="close")]
+        ]
+        await query.message.edit_text(text, reply_markup=InlineKeyboardMarkup(buttons))
+
+    elif data.startswith("ongoing_list_"):
+        page = int(data.split("_")[2])
+        all_ongoing = await db.get_all_ongoing()
+        if not all_ongoing:
+            return await query.message.edit_text("<b>No ongoing series found!</b>",
+                                                reply_markup=InlineKeyboardMarkup([[InlineKeyboardButton("ᴄʟᴏsᴇ", callback_data="close")]]))
+
+        # Pagination logic (10 per page)
+        per_page = 10
+        total_pages = (len(all_ongoing) + per_page - 1) // per_page
+        start = page * per_page
+        end = start + per_page
+
+        buttons = []
+        for series in all_ongoing[start:end]:
+            buttons.append([InlineKeyboardButton(f"📺 {series['title']} (S{series['season']} E{series['current_ep']})",
+                                                 callback_data=f"manage_ongoing_{series['title'][:20]}")])
+
+        # Navigation buttons
+        nav = []
+        if page > 0:
+            nav.append(InlineKeyboardButton("◀️ Bᴀᴄᴋ", callback_data=f"ongoing_list_{page-1}"))
+        nav.append(InlineKeyboardButton(f"📄 {page+1}/{total_pages}", callback_data="none"))
+        if page < total_pages - 1:
+            nav.append(InlineKeyboardButton("Nᴇxᴛ ▶️", callback_data=f"ongoing_list_{page+1}"))
+
+        if nav:
+            buttons.append(nav)
+
+        buttons.append([InlineKeyboardButton("ᴄʟᴏsᴇ", callback_data="close")])
+        await query.message.edit_text("<b>📺 Oɴɢᴏɪɴɢ Sᴇʀɪᴇs Mᴀɴᴀɢᴇᴍᴇɴᴛ</b>",
+                                     reply_markup=InlineKeyboardMarkup(buttons))
+
+    elif data == "ongoing_list":
+        # Default to first page
+        await cb_handler(client, query.copy(data="ongoing_list_0"))
+
+    elif data.startswith("inc_ep_") or data.startswith("dec_ep_"):
+        is_inc = data.startswith("inc_ep_")
+        title_prefix = data.replace("inc_ep_", "").replace("dec_ep_", "")
+        all_ongoing = await db.get_all_ongoing()
+        series = None
+        for s in all_ongoing:
+            if s['title'].startswith(title_prefix):
+                series = s
+                break
+
+        if not series:
+            return await query.answer("Series not found!", show_alert=True)
+
+        new_ep = int(series['current_ep']) + (1 if is_inc else -1)
+        if new_ep < 0: new_ep = 0
+
+        await db.update_ongoing_ep(series['title'], str(new_ep))
+        await query.answer(f"Episode updated to {new_ep}")
+
+        # Refresh management view
+        series['current_ep'] = str(new_ep)
+        text = (f"<b>📺 Mᴀɴᴀɢɪɴɢ: {series['title']}</b>\n\n"
+                f"<b>Sᴇᴀsᴏɴ:</b> {series['season']}\n"
+                f"<b>ᴄᴜʀʀᴇɴᴛ Eᴘɪsᴏᴅᴇ:</b> {series['current_ep']}\n"
+                f"<b>Tᴏᴛᴀʟ Eᴘɪsᴏᴅᴇs:</b> {series['total_eps']}\n"
+                f"<b>Lᴀɴɢᴜᴀɢᴇ:</b> {series['language']}\n"
+                f"<b>Rᴇʟᴇᴀsᴇ Dᴀʏ:</b> {series['release_day']}")
+
+        buttons = [
+            [InlineKeyboardButton("📤 Pᴏsᴛ Nᴇxᴛ Eᴘɪsᴏᴅᴇ", callback_data=f"post_ongoing_{series['title'][:20]}")],
+            [InlineKeyboardButton("➕ Iɴᴄʀᴇᴍᴇɴᴛ Eᴘ", callback_data=f"inc_ep_{series['title'][:20]}"),
+             InlineKeyboardButton("➖ Dᴇᴄʀᴇᴍᴇɴᴛ Eᴘ", callback_data=f"dec_ep_{series['title'][:20]}")],
+            [InlineKeyboardButton("‹ ʙᴀᴄᴋ", callback_data="ongoing_list_0"),
+             InlineKeyboardButton("ᴄʟᴏsᴇ", callback_data="close")]
+        ]
+        await query.message.edit_text(text, reply_markup=InlineKeyboardMarkup(buttons))
+
+    elif data.startswith("post_ongoing_"):
+        title_prefix = data.replace("post_ongoing_", "")
+        all_ongoing = await db.get_all_ongoing()
+        series = None
+        for s in all_ongoing:
+            if s['title'].startswith(title_prefix):
+                series = s
+                break
+
+        if not series:
+            return await query.answer("Series not found!", show_alert=True)
+
+        # Format the caption as requested in the image
+        caption = (f"✦ <b>{series['title']}</b>\n"
+                   f"➥ <b>Sᴇᴀsᴏɴ - {series['season']}</b>\n"
+                   f"➥ <b>Eᴘɪsᴏᴅᴇ - {series['current_ep']}</b>\n"
+                   f"➥ <b>Lᴀɴɢᴜᴀɢᴇ - {series['language']}</b>\n\n"
+                   f"🔔 <b>Nᴇᴡ Eᴘɪsᴏᴅᴇ Eᴠᴇʀʏ {series['release_day']}.</b>\n\n"
+                   f"✮ <b>Usᴇ VLC ᴏʀ MX Pʟᴀʏᴇʀ ᴛᴏ ᴄʜᴀɴɢᴇ ᴀᴜᴅɪᴏ/sᴜʙᴛɪᴛʟᴇs ғᴏʀ ʙᴇsᴛ ᴇxᴘᴇʀɪᴇɴᴄᴇ.</b>")
+
+        # Quality buttons
+        qual_list = [q.strip() for q in series['qualities'].split(',')]
+        row1 = []
+        for q in qual_list:
+            # We don't have the actual file link here, so we link to the bot search
+            # Or if it's for a channel post, we might need to search the database for this specific episode
+            search_query = f"{series['title']} S{series['season']} E{series['current_ep']} {q}"
+            bot_username = (await client.get_me()).username
+            row1.append(InlineKeyboardButton(f"[{q}]", url=f"https://t.me/{bot_username}?start=search_{search_query.replace(' ', '_')}"))
+
+        buttons = [row1]
+        buttons.append([InlineKeyboardButton(" [ ʜᴏᴡ ᴛᴏ ᴅᴏᴡɴʟᴏᴀᴅ ] ", url=TUT_VID)])
+
+        target_chat = -1002096101886 # The ongoing channel
+        try:
+            await client.send_photo(
+                chat_id=target_chat,
+                photo=series['poster'],
+                caption=caption,
+                reply_markup=InlineKeyboardMarkup(buttons)
+            )
+
+            # Increment episode after posting
+            new_ep = int(series['current_ep']) + 1
+            await db.update_ongoing_ep(series['title'], str(new_ep))
+
+            await query.answer("Successfully posted and incremented episode!", show_alert=True)
+
+            # Refresh view manually to avoid infinite recursion
+            series['current_ep'] = str(new_ep)
+            text = (f"<b>📺 Mᴀɴᴀɢɪɴɢ: {series['title']}</b>\n\n"
+                    f"<b>Sᴇᴀsᴏɴ:</b> {series['season']}\n"
+                    f"<b>ᴄᴜʀʀᴇɴᴛ Eᴘɪsᴏᴅᴇ:</b> {series['current_ep']}\n"
+                    f"<b>Tᴏᴛᴀʟ Eᴘɪsᴏᴅᴇs:</b> {series['total_eps']}\n"
+                    f"<b>Lᴀɴɢᴜᴀɢᴇ:</b> {series['language']}\n"
+                    f"<b>Rᴇʟᴇᴀsᴇ Dᴀʏ:</b> {series['release_day']}")
+
+            buttons = [
+                [InlineKeyboardButton("📤 Pᴏsᴛ Nᴇxᴛ Eᴘɪsᴏᴅᴇ", callback_data=f"post_ongoing_{series['title'][:20]}")],
+                [InlineKeyboardButton("➕ Iɴᴄʀᴇᴍᴇɴᴛ Eᴘ", callback_data=f"inc_ep_{series['title'][:20]}"),
+                 InlineKeyboardButton("➖ Dᴇᴄʀᴇᴍᴇɴᴛ Eᴘ", callback_data=f"dec_ep_{series['title'][:20]}")],
+                [InlineKeyboardButton("‹ ʙᴀᴄᴋ", callback_data="ongoing_list_0"),
+                 InlineKeyboardButton("ᴄʟᴏsᴇ", callback_data="close")]
+            ]
+            await query.message.edit_text(text, reply_markup=InlineKeyboardMarkup(buttons))
+        except Exception as e:
+            await query.answer(f"Failed to post: {str(e)}", show_alert=True)
 
     elif data == "fsub_back":
         channels = await db.show_channels()

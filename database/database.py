@@ -286,13 +286,15 @@ class Rohit:
 
     async def find_file(self, query):
         import re
-        # Escape the query to prevent regex errors
-        escaped_query = re.escape(query)
-        # Basic regex search in filename and caption
+        # Split query into words and search for each word
+        query_words = query.split()
+        regex_pattern = "".join([f"(?=.*{re.escape(word)})" for word in query_words])
+
+        # Search in filename and caption with word-agnostic matching
         cursor = self.file_data.find({
             '$or': [
-                {'file_name': {'$regex': escaped_query, '$options': 'i'}},
-                {'caption': {'$regex': escaped_query, '$options': 'i'}}
+                {'file_name': {'$regex': regex_pattern, '$options': 'i'}},
+                {'caption': {'$regex': regex_pattern, '$options': 'i'}}
             ]
         })
         return await cursor.to_list(length=100)

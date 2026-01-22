@@ -38,12 +38,14 @@ async def stats(bot: Bot, message: Message):
     uptime = get_readable_time(delta.seconds)
 
     text = (
-        "<b>📊 <u>ʙᴏᴛ sᴛᴀᴛɪsᴛɪᴄs</u></b>\n\n"
-        f"<b>📁 ᴛᴏᴛᴀʟ ғɪʟᴇs :</b> <code>{files}</code>\n"
-        f"<b>👥 ᴛᴏᴛᴀʟ ᴜsᴇʀs :</b> <code>{users}</code>\n"
+        "<b>📊 ʙᴏᴛ ʟɪᴠᴇ sᴛᴀᴛɪsᴛɪᴄs</b>\n"
+        "━━━━━━━━━━━━━━━━━━━━━━\n"
+        f"<b>📁 ᴛᴏᴛᴀʟ ғɪʟᴇs  :</b> <code>{files}</code>\n"
+        f"<b>👥 ᴛᴏᴛᴀʟ ᴜsᴇʀs  :</b> <code>{users}</code>\n"
         f"<b>✅ ᴛᴏᴛᴀʟ ᴠᴇʀɪғʏ :</b> <code>{verify}</code>\n"
-        f"<b>⏳ ʙᴏᴛ ᴜᴘᴛɪᴍᴇ :</b> <code>{uptime}</code>\n\n"
-        "<b>⚙️ sᴛᴀᴛᴜs: ʀᴜɴɴɪɴɢ [ᴀᴄᴛɪᴠᴇ]</b>"
+        f"<b>⏳ ʙᴏᴛ ᴜᴘᴛɪᴍᴇ :</b> <code>{uptime}</code>\n"
+        "━━━━━━━━━━━━━━━━━━━━━━\n"
+        "<b>⚙️ sᴛᴀᴛᴜs: ᴀᴄᴛɪᴠᴇ 🟢</b>"
     )
     await message.reply_text(text)
 

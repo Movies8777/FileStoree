@@ -40,13 +40,17 @@ async def search_handler(client: Client, message: Message):
 
         buttons.append([InlineKeyboardButton(f"📁 {file_name[:50]}", url=link)])
 
+    # Add How To Download button
+    buttons.append([InlineKeyboardButton("🍿 Hᴏᴡ Tᴏ Dᴏᴡɴʟᴏᴀᴅ 🍿", url=TUT_VID)])
+
+    text = f"<b>🔎 Sᴇᴀʀᴄʜ Rᴇsᴜʟᴛs Fᴏʀ '{query}'</b>\n"
+    text += f"━━━━━━━━━━━━━━━━━━━━━━\n"
     if len(files) > 10:
-        await search_msg.edit(
-            f"<b>Fᴏᴜɴᴅ {len(files)} ʀᴇsᴜʟᴛs ғᴏʀ '{query}'</b>\n<i>Sʜᴏᴡɪɴɢ ᴛᴏᴘ 10 ʀᴇsᴜʟᴛs:</i>",
-            reply_markup=InlineKeyboardMarkup(buttons)
-        )
+        text += f"<i>Sʜᴏᴡɪɴɢ ᴛᴏᴘ 10 ʀᴇsᴜʟᴛs ᴏᴜᴛ ᴏғ {len(files)}:</i>"
     else:
-        await search_msg.edit(
-            f"<b>Fᴏᴜɴᴅ {len(files)} ʀᴇsᴜʟᴛs ғᴏʀ '{query}'</b>",
-            reply_markup=InlineKeyboardMarkup(buttons)
-        )
+        text += f"<i>Fᴏᴜɴᴅ {len(files)} ʀᴇsᴜʟᴛs:</i>"
+
+    await search_msg.edit(
+        text=text,
+        reply_markup=InlineKeyboardMarkup(buttons)
+    )

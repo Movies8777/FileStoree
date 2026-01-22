@@ -57,8 +57,8 @@ async def auto_index(client: Bot, message: Message):
 
     if file_id:
         try:
-            # Store full caption for better searchability
-            caption = message.caption if message.caption else ""
+            # Store full HTML caption to preserve formatting
+            caption = message.caption.html if message.caption else ""
             await db.add_file(
                 file_name=file_name,
                 file_size=file_size,
@@ -179,7 +179,7 @@ async def index_command(client: Bot, message: Message):
                     copied_msg = await msg.copy(client.db_channel.id)
                     msg_id = copied_msg.id
 
-                caption = msg.caption if msg.caption else ""
+                caption = msg.caption.html if msg.caption else ""
                 await db.add_file(file_name, file_size, file_type, file_id, msg_id, caption)
                 total_files += 1
             except FloodWait as e:
@@ -189,7 +189,7 @@ async def index_command(client: Bot, message: Message):
                 else:
                     copied_msg = await msg.copy(client.db_channel.id)
                     msg_id = copied_msg.id
-                caption = msg.caption if msg.caption else ""
+                caption = msg.caption.html if msg.caption else ""
                 await db.add_file(file_name, file_size, file_type, file_id, msg_id, caption)
                 total_files += 1
             except Exception as e:

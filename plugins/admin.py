@@ -169,6 +169,34 @@ async def get_stats(client: Client, message: Message):
     await pro.edit(stats_msg, reply_markup=reply_markup)
 
 
+@Bot.on_message(filters.command('file_details') & filters.private & admin)
+async def get_file_details(client: Client, message: Message):
+    if len(message.command) < 2:
+        return await message.reply_text("<b>Usage: /file_details {filename_or_query}</b>")
+
+    query = message.text.split(None, 1)[1]
+    pro = await message.reply("<b>Searching...</b>", quote=True)
+
+    files = await db.find_file(query)
+    if not files:
+        return await pro.edit("<b>No files found!</b>")
+
+    # Return details for the first matching file for brevity
+    file = files[0]
+
+    details = (
+        f"<b>📄 Fɪʟᴇ Dᴇᴛᴀɪʟs</b>\n\n"
+        f"<b>Nᴀᴍᴇ:</b> <code>{file['file_name']}</code>\n"
+        f"<b>Sɪᴢᴇ:</b> <code>{file['file_size']} bytes</code>\n"
+        f"<b>Tʏᴘᴇ:</b> <code>{file['file_type']}</code>\n"
+        f"<b>Msg ID:</b> <code>{file['msg_id']}</code>\n"
+        f"<b>Cᴀᴘᴛɪᴏɴ:</b>\n<blockquote>{file.get('caption', 'No Caption')}</blockquote>"
+    )
+
+    reply_markup = InlineKeyboardMarkup([[InlineKeyboardButton("ᴄʟᴏsᴇ", callback_data="close")]])
+    await pro.edit(details, reply_markup=reply_markup)
+
+
 # Don't Remove Credit @CodeFlix_Bots, @rohit_1888
 # Ask Doubt on telegram @CodeflixSupport
 #

@@ -13,6 +13,46 @@ def extract_quality(file_name):
     res_match = re.search(r'(\d{3,4}p|4[kK])', file_name, re.IGNORECASE)
     return res_match.group(1).upper() if res_match else "HDR"
 
+def extract_year(file_names):
+    years = set()
+    for name in file_names:
+        match = re.search(r'(19|20)\d{2}', name)
+        if match:
+            years.add(int(match.group()))
+    if not years:
+        return "N/A"
+    if len(years) == 1:
+        return str(list(years)[0])
+    return f"{min(years)} - {max(years)}"
+
+def extract_audio(file_names):
+    audios = set()
+    patterns = {
+        'Hindi': r'Hindi',
+        'English': r'English|Eng',
+        'Tamil': r'Tamil',
+        'Telugu': r'Telugu',
+        'Malayalam': r'Malayalam',
+        'Kannada': r'Kannada',
+        'Bengali': r'Bengali',
+        'Marathi': r'Marathi',
+        'Punjabi': r'Punjabi',
+        'Multi': r'Multi',
+        'Dual': r'Dual',
+        'ESubs': r'ESub|Subtitle'
+    }
+    for name in file_names:
+        for label, pattern in patterns.items():
+            if re.search(pattern, name, re.IGNORECASE):
+                audios.add(label)
+
+    if not audios:
+        return "Hindi"
+
+    # Priority sorting or just alphabetical
+    res = sorted(list(audios))
+    return " ".join(res)
+
 @Bot.on_message(filters.command("post") & admin)
 async def post_command(client: Bot, message: Message):
     # Usage check
@@ -80,9 +120,18 @@ async def post_command(client: Bot, message: Message):
                 ep_res_groups[ep_val][res].append(link)
 
             # Caption and Buttons
-            caption = f"<b>🎬 {series_name} ({start_ep_str}-{end_ep_str})\n\n"
-            caption += f"✨ Join Our Main Channel @Movies8777\n"
-            caption += f"━━━━━━━━━━━━━━━━━━━━━━</b>"
+            qualities = " - ".join(sorted(list(set(extract_quality(f['file_name']) for f in all_files))))
+            years = extract_year([f['file_name'] for f in all_files])
+            audios = extract_audio([f['file_name'] for f in all_files])
+
+            caption = (
+                f"<b>📼 Series: {series_name}\n"
+                f"📅 Year: {years}\n"
+                f"🎥 Quality: {qualities}\n"
+                f"🔊 Audio: {audios}\n\n"
+                f"✨ Join Our Main Channel @Movies8777\n"
+                f"━━━━━━━━━━━━━━━━━━━━━━</b>"
+            )
 
             buttons = []
             # Sort episodes
@@ -150,9 +199,19 @@ async def post_command(client: Bot, message: Message):
                 link = f"https://t.me/{client.username}?start={base64_string}"
                 res_groups[res].append(link)
 
-            caption = f"<b>🎬 {movie_name}\n\n"
-            caption += f"✨ Join Our Main Channel @Movies8777\n"
-            caption += f"━━━━━━━━━━━━━━━━━━━━━━</b>"
+            # Caption and Buttons
+            qualities = " - ".join(sorted(list(set(extract_quality(f['file_name']) for f in files))))
+            years = extract_year([f['file_name'] for f in files])
+            audios = extract_audio([f['file_name'] for f in files])
+
+            caption = (
+                f"<b>📼 Movie: {movie_name}\n"
+                f"📅 Year: {years}\n"
+                f"🎥 Quality: {qualities}\n"
+                f"🔊 Audio: {audios}\n\n"
+                f"✨ Join Our Main Channel @Movies8777\n"
+                f"━━━━━━━━━━━━━━━━━━━━━━</b>"
+            )
 
             buttons = []
             all_res_buttons = []

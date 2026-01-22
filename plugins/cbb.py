@@ -349,13 +349,16 @@ async def cb_handler(client: Bot, query: CallbackQuery):
         search_query = f"{series['title']} S{series['season']} {ep_tag}"
         files = await db.find_file(search_query)
 
-        # Format the caption as requested in the image
-        caption = (f"✦ <b>{series['title']}</b>\n"
-                   f"➥ <b>Sᴇᴀsᴏɴ - {series['season']}</b>\n"
-                   f"➥ <b>Eᴘɪsᴏᴅᴇ - {series['current_ep']}</b>\n"
-                   f"➥ <b>Lᴀɴɢᴜᴀɢᴇ - {series['language']}</b>\n\n"
-                   f"🔔 <b>Nᴇᴡ Eᴘɪsᴏᴅᴇ Eᴠᴇʀʏ {series['release_day']}.</b>\n\n"
-                   f"✮ <b>Usᴇ VLC ᴏʀ MX Pʟᴀʏᴇʀ ᴛᴏ ᴄʜᴀɴɢᴇ ᴀᴜᴅɪᴏ/sᴜʙᴛɪᴛʟᴇs ғᴏʀ ʙᴇsᴛ ᴇxᴘᴇʀɪᴇɴᴄᴇ.</b>")
+        if not files:
+            return await query.answer(f"No files found for {series['title']} {ep_tag} in DB! Please upload first.", show_alert=True)
+
+        # Format the caption as requested
+        caption = (f"<b>✦ {series['title']}</b>\n\n"
+                   f"<b>➥ Season - {series['season']}</b>\n"
+                   f"<b>➥ Episode - {series['current_ep']}</b>\n"
+                   f"<b>➥ Language - {series['language']}</b>\n\n"
+                   f"<blockquote><b>🔔 New Episode Every {series['release_day']}.</b></blockquote>\n\n"
+                   f"<blockquote><b>✮ Usᴇ VLC Pʟᴀʏᴇʀ Oʀ Mx Pʟᴀʏᴇʀ To Cʜᴀɴɢᴇ Aᴜᴅɪᴏ Aɴᴅ Sᴜʙᴛɪᴛʟᴇs Fᴏʀ A Bᴇᴛᴛᴇʀ Vɪᴇᴡɪɴɢ Exᴘᴇʀɪᴇɴᴄᴇ.</b></blockquote>")
 
         # Quality buttons logic mirrored from post.py
         res_groups = {}
@@ -386,14 +389,7 @@ async def cb_handler(client: Bot, query: CallbackQuery):
 
             base64_string = await encode(string)
             link = f"https://t.me/{bot_username}?start={base64_string}"
-            all_res_buttons.append(InlineKeyboardButton(f"[{res.upper()}]", url=link))
-
-        # Fallback if no files found in DB
-        if not all_res_buttons:
-            qual_list = [q.strip() for q in series['qualities'].split(',')]
-            for q in qual_list:
-                s_query = f"{series['title']} S{series['season']} E{series['current_ep']} {q}"
-                all_res_buttons.append(InlineKeyboardButton(f"[{q}]", url=f"https://t.me/{bot_username}?start=search_{s_query.replace(' ', '_')}"))
+            all_res_buttons.append(InlineKeyboardButton(f"{res.upper()}", url=link))
 
         for i in range(0, len(all_res_buttons), 3):
             buttons.append(all_res_buttons[i:i+3])

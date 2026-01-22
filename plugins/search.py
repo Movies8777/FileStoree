@@ -18,8 +18,8 @@ async def search_handler(client: Client, message: Message):
             print(f"Error importing not_joined: {e}")
             return await message.reply("Please join our channel to use this bot.")
 
-    query = message.text
-    if len(query) < 2:
+    query = message.text.strip()
+    if len(query) < 3:
         return
 
     search_msg = await message.reply_text("<b>Sᴇᴀʀᴄʜɪɴɢ...</b>")

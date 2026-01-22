@@ -21,7 +21,7 @@ from pyrogram.types import Message, InlineKeyboardMarkup, InlineKeyboardButton, 
 from pyrogram.errors.exceptions.bad_request_400 import UserNotParticipant, InviteHashEmpty, ChatAdminRequired, PeerIdInvalid, UserIsBlocked, InputUserDeactivated
 from bot import Bot
 from config import *
-from helper_func import *
+from helper_func import admin
 from database.database import *
 
 

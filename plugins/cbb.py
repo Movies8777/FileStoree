@@ -13,7 +13,8 @@ from config import *
 from pyrogram.types import Message, InlineKeyboardMarkup, InlineKeyboardButton, CallbackQuery
 from pyrogram.errors import MessageNotModified
 from database.database import *
-from helper_func import is_admin, get_exp_time
+from helper_func import is_admin, get_exp_time, encode
+import re
 
 def safe_edit(msg, *args, **kwargs):
     """Safely edit text without MESSAGE_NOT_MODIFIED crashes."""
@@ -343,6 +344,11 @@ async def cb_handler(client: Bot, query: CallbackQuery):
         if not series:
             return await query.answer("Series not found!", show_alert=True)
 
+        # Search for files matching the episode
+        ep_tag = f"E{int(series['current_ep']):02d}"
+        search_query = f"{series['title']} S{series['season']} {ep_tag}"
+        files = await db.find_file(search_query)
+
         # Format the caption as requested in the image
         caption = (f"✦ <b>{series['title']}</b>\n"
                    f"➥ <b>Sᴇᴀsᴏɴ - {series['season']}</b>\n"
@@ -351,17 +357,47 @@ async def cb_handler(client: Bot, query: CallbackQuery):
                    f"🔔 <b>Nᴇᴡ Eᴘɪsᴏᴅᴇ Eᴠᴇʀʏ {series['release_day']}.</b>\n\n"
                    f"✮ <b>Usᴇ VLC ᴏʀ MX Pʟᴀʏᴇʀ ᴛᴏ ᴄʜᴀɴɢᴇ ᴀᴜᴅɪᴏ/sᴜʙᴛɪᴛʟᴇs ғᴏʀ ʙᴇsᴛ ᴇxᴘᴇʀɪᴇɴᴄᴇ.</b>")
 
-        # Quality buttons
-        qual_list = [q.strip() for q in series['qualities'].split(',')]
-        row1 = []
-        for q in qual_list:
-            # We don't have the actual file link here, so we link to the bot search
-            # Or if it's for a channel post, we might need to search the database for this specific episode
-            search_query = f"{series['title']} S{series['season']} E{series['current_ep']} {q}"
-            bot_username = (await client.get_me()).username
-            row1.append(InlineKeyboardButton(f"[{q}]", url=f"https://t.me/{bot_username}?start=search_{search_query.replace(' ', '_')}"))
+        # Quality buttons logic mirrored from post.py
+        res_groups = {}
+        for file in files:
+            res_match = re.search(r'(\d{3,4}p|4[kK])', file['file_name'], re.IGNORECASE)
+            res = res_match.group(1).lower() if res_match else "hdr"
+            if res not in res_groups:
+                res_groups[res] = []
+            res_groups[res].append(file)
 
-        buttons = [row1]
+        buttons = []
+        def q_sort(q):
+            val = re.sub(r'p|k', '', q, flags=re.I)
+            return int(val) if val.isdigit() else 0
+
+        all_res_buttons = []
+        bot_username = (await client.get_me()).username
+
+        for res in sorted(res_groups.keys(), key=q_sort):
+            res_files = res_groups[res]
+            if len(res_files) == 1:
+                # Single file link
+                string = f"get-{res_files[0]['msg_id'] * abs(client.db_channel.id)}"
+            else:
+                # Batch link for multiple parts of same quality
+                msg_ids = [f['msg_id'] for f in res_files]
+                string = f"get-{min(msg_ids) * abs(client.db_channel.id)}-{max(msg_ids) * abs(client.db_channel.id)}"
+
+            base64_string = await encode(string)
+            link = f"https://t.me/{bot_username}?start={base64_string}"
+            all_res_buttons.append(InlineKeyboardButton(f"[{res.upper()}]", url=link))
+
+        # Fallback if no files found in DB
+        if not all_res_buttons:
+            qual_list = [q.strip() for q in series['qualities'].split(',')]
+            for q in qual_list:
+                s_query = f"{series['title']} S{series['season']} E{series['current_ep']} {q}"
+                all_res_buttons.append(InlineKeyboardButton(f"[{q}]", url=f"https://t.me/{bot_username}?start=search_{s_query.replace(' ', '_')}"))
+
+        for i in range(0, len(all_res_buttons), 3):
+            buttons.append(all_res_buttons[i:i+3])
+
         buttons.append([InlineKeyboardButton(" [ ʜᴏᴡ ᴛᴏ ᴅᴏᴡɴʟᴏᴀᴅ ] ", url=TUT_VID)])
 
         target_chat = -1002096101886 # The ongoing channel

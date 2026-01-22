@@ -13,6 +13,7 @@ dnspython
 aiohttp
 python-dotenv
 # --- For-Web-Response ------- #
+openai
 pytz
 requests
 bs4

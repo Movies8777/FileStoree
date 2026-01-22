@@ -407,8 +407,15 @@ async def cb_handler(client: Bot, query: CallbackQuery):
 
             # Increment episode after posting
             new_ep = int(series['current_ep']) + 1
-            await db.update_ongoing_ep(series['title'], str(new_ep))
+            total_eps = int(series['total_eps'])
 
+            if new_ep > total_eps:
+                # Series completed! Remove from ongoing list
+                await db.del_ongoing(series['title'])
+                await query.answer(f"Series {series['title']} completed and removed from list!", show_alert=True)
+                return await cb_handler(client, query.copy(data="ongoing_list_0"))
+
+            await db.update_ongoing_ep(series['title'], str(new_ep))
             await query.answer("Successfully posted and incremented episode!", show_alert=True)
 
             # Refresh view manually to avoid infinite recursion

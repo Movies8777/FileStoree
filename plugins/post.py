@@ -40,7 +40,9 @@ def extract_year(file_names):
     return f"{min(years)} - {max(years)}"
 
 def extract_audio(file_names):
-    audios = set()
+    langs = set()
+    subs = set()
+
     patterns = {
         'Hindi': r'Hindi',
         'English': r'English|Eng',
@@ -52,20 +54,38 @@ def extract_audio(file_names):
         'Marathi': r'Marathi',
         'Punjabi': r'Punjabi',
         'Multi': r'Multi',
-        'Dual': r'Dual',
-        'ESubs': r'ESub|Subtitle'
+        'Dual': r'Dual'
     }
+
+    sub_patterns = {
+        'ESubs': r'ESub|Subtitle',
+        'MSubs': r'MSub'
+    }
+
     for name in file_names:
         for label, pattern in patterns.items():
             if re.search(pattern, name, re.IGNORECASE):
-                audios.add(label)
+                langs.add(label)
+        for label, pattern in sub_patterns.items():
+            if re.search(pattern, name, re.IGNORECASE):
+                subs.add(label)
 
-    if not audios:
+    if not langs and not subs:
         return None
 
-    # Priority sorting or just alphabetical
-    res = sorted(list(audios))
-    return " ".join(res)
+    res = []
+    if langs:
+        # Sort languages but keep Hindi first if possible or just alphabetical
+        sorted_langs = sorted(list(langs))
+        if 'Hindi' in sorted_langs:
+            sorted_langs.remove('Hindi')
+            sorted_langs.insert(0, 'Hindi')
+        res.extend(sorted_langs)
+
+    if subs:
+        res.extend(sorted(list(subs)))
+
+    return " - ".join(res)
 
 @Bot.on_message(filters.command("post") & admin)
 async def post_command(client: Bot, message: Message):
@@ -161,14 +181,11 @@ async def post_command(client: Bot, message: Message):
             if years:
                 caption += f"📅 Year: {years}\n"
             if qualities:
-                caption += f"🎥 Quality: {qualities} COMBiNED\n"
+                caption += f"🎥 Quality: {qualities}\n"
             if audios:
                 caption += f"🔊 Audio: {audios}\n"
 
-            caption += (
-                f"\n✨ Join Our Main Channel @Movies8777\n"
-                f"━━━━━━━━━━━━━━━━━━━━━━</b>"
-            )
+            caption += "</b>"
 
             buttons = []
             if len(ep_res_groups) > 1:
@@ -187,7 +204,7 @@ async def post_command(client: Bot, message: Message):
                     batch_string = f"get-{first_id * abs(client.db_channel.id)}-{last_id * abs(client.db_channel.id)}"
                     batch_base64 = await encode(batch_string)
                     batch_link = f"https://t.me/{client.username}?start={batch_base64}"
-                    batch_res_buttons.append(InlineKeyboardButton(f"⚡ {res.upper()}", url=batch_link))
+                    batch_res_buttons.append(InlineKeyboardButton(f"{res.upper()}", url=batch_link))
 
                 for i in range(0, len(batch_res_buttons), 3):
                     buttons.append(batch_res_buttons[i:i+3])
@@ -211,9 +228,9 @@ async def post_command(client: Bot, message: Message):
                 batch_base64 = await encode(batch_string)
                 batch_link = f"https://t.me/{client.username}?start={batch_base64}"
 
-                buttons.append([InlineKeyboardButton("🎁 Bᴀᴛᴄʜ Dᴏᴡɴʟᴏᴀᴅ (Aʟʟ Eᴘs) 🎁", url=batch_link)])
+                buttons.append([InlineKeyboardButton("Bᴀᴛᴄʜ Dᴏᴡɴʟᴏᴀᴅ (Aʟʟ Eᴘs)", url=batch_link)])
 
-            buttons.append([InlineKeyboardButton("🍿 Hᴏᴡ Tᴏ Dᴏᴡɴʟᴏᴀᴅ 🍿", url=TUT_VID)])
+            buttons.append([InlineKeyboardButton("Hᴏᴡ Tᴏ Dᴏᴡɴʟᴏᴀᴅ", url=TUT_VID)])
 
             await client.send_photo(
                 chat_id=POST_CHANNEL_ID if POST_CHANNEL_ID else message.chat.id,
@@ -264,14 +281,11 @@ async def post_command(client: Bot, message: Message):
             if years:
                 caption += f"📅 Year: {years}\n"
             if qualities:
-                caption += f"🎥 Quality: {qualities} COMBiNED\n"
+                caption += f"🎥 Quality: {qualities}\n"
             if audios:
                 caption += f"🔊 Audio: {audios}\n"
 
-            caption += (
-                f"\n✨ Join Our Main Channel @Movies8777\n"
-                f"━━━━━━━━━━━━━━━━━━━━━━</b>"
-            )
+            caption += "</b>"
 
             buttons = []
             def q_sort(q):
@@ -281,12 +295,12 @@ async def post_command(client: Bot, message: Message):
             all_res_buttons = []
             for res in sorted(res_groups.keys(), key=q_sort):
                 link = res_groups[res][0]
-                all_res_buttons.append(InlineKeyboardButton(f"⚡ {res.upper()}", url=link))
+                all_res_buttons.append(InlineKeyboardButton(f"{res.upper()}", url=link))
 
             for i in range(0, len(all_res_buttons), 3):
                 buttons.append(all_res_buttons[i:i+3])
 
-            buttons.append([InlineKeyboardButton("🍿 Hᴏᴡ Tᴏ Dᴏᴡɴʟᴏᴀᴅ 🍿", url=TUT_VID)])
+            buttons.append([InlineKeyboardButton("Hᴏᴡ Tᴏ Dᴏᴡɴʟᴏᴀᴅ", url=TUT_VID)])
 
             await client.send_photo(
                 chat_id=POST_CHANNEL_ID if POST_CHANNEL_ID else message.chat.id,

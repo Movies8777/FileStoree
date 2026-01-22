@@ -5,7 +5,7 @@ from pyrogram import Client, filters
 from pyrogram.types import Message
 from pyrogram.errors import FloodWait
 from bot import Bot
-from config import LOGGER, CHANNEL_ID
+from config import LOGGER, CHANNEL_ID, OWNER_ID
 from helper_func import admin, encode, get_message_id
 from database.database import db
 
@@ -68,6 +68,20 @@ async def auto_index(client: Bot, message: Message):
                 caption=caption
             )
             logger.info(f"[DEBUG] Auto-indexed file: {file_name} (ID: {message.id})")
+
+            # Notify Admin
+            try:
+                await client.send_message(
+                    chat_id=OWNER_ID,
+                    text=(
+                        "<b>📁 <u>Nᴇᴡ Fɪʟᴇ Aᴜᴛᴏ-Iɴᴅᴇxᴇᴅ</u></b>\n\n"
+                        f"<b>Nᴀᴍᴇ:</b> <code>{file_name}</code>\n"
+                        f"<b>Cᴀᴘᴛɪᴏɴ:</b>\n<blockquote>{caption}</blockquote>"
+                    )
+                )
+            except Exception as e:
+                logger.error(f"Error notifying admin: {e}")
+
         except Exception as e:
             logger.error(f"Error in auto-indexing: {e}")
 

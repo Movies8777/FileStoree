@@ -3,30 +3,11 @@ import asyncio
 from pyrogram import Client, filters
 from pyrogram.types import Message, InlineKeyboardMarkup, InlineKeyboardButton
 from bot import Bot
-from config import LOGGER, POST_CHANNEL_ID, TUT_VID, OPENAI_API_KEY
+from config import LOGGER, POST_CHANNEL_ID, TUT_VID
 from helper_func import admin, encode
 from database.database import db
-from plugins.tmdb import get_movie_poster, get_movie_details
-from openai import OpenAI
 
 logger = LOGGER(__name__)
-
-# Initialize OpenAI client
-client_ai = OpenAI(api_key=OPENAI_API_KEY)
-
-async def generate_ai_description(title):
-    try:
-        response = client_ai.chat.completions.create(
-            model="gpt-3.5-turbo",
-            messages=[
-                {"role": "system", "content": "You are a movie expert. Provide a very short (max 20 words) and catchy description for the given movie/series."},
-                {"role": "user", "content": title}
-            ]
-        )
-        return response.choices[0].message.content
-    except Exception as e:
-        logger.error(f"OpenAI error: {e}")
-        return ""
 
 def extract_quality(file_name):
     # Match common resolutions
@@ -124,27 +105,24 @@ async def post_command(client: Bot, message: Message):
 
     cmd_text = message.text.split(None, 1)
     if len(cmd_text) < 2:
-        return await message.reply_text("<b>Usage:</b>\n\n<b>Movie:</b> /post {movie_name} {optional_poster_url}\n<b>Series:</b> /post {series_name} E01 to E06 {optional_poster_url}")
+        return await message.reply_text("<b>Usage:</b>\n\n<b>Movie:</b> /post {movie_name} {poster_url}\n<b>Series:</b> /post {series_name} E01 to E06 {poster_url}")
 
     full_query = cmd_text[1]
 
     # Check if it's a series (contains " to ")
     is_series = " to " in full_query.lower() and re.search(r'E\d+', full_query, re.IGNORECASE)
 
-    poster_url = None
-    movie_description = None
-
     if is_series:
         # Parse series: {series_name} E{start} to E{end} {poster_url}
         try:
-            match = re.search(r'(.+?)\s+(E\d+)\s+to\s+(E\d+)(?:\s+(.+))?', full_query, re.IGNORECASE)
+            match = re.search(r'(.+?)\s+(E\d+)\s+to\s+(E\d+)\s+(.+)', full_query, re.IGNORECASE)
             if not match:
                 return await message.reply_text("<b>Invalid series format!</b>\nUse: /post {series_name} E01 to E06 {poster_url}")
 
             series_name = match.group(1).strip()
             start_ep_str = match.group(2).upper()
             end_ep_str = match.group(3).upper()
-            poster_url = match.group(4).strip() if match.group(4) else None
+            poster_url = match.group(4).strip()
 
             start_ep = int(start_ep_str[1:])
             end_ep = int(end_ep_str[1:])
@@ -153,18 +131,6 @@ async def post_command(client: Bot, message: Message):
                 return await message.reply_text("<b>Start episode cannot be greater than end episode!</b>")
 
             search_msg = await message.reply_text(f"<b>Sᴇᴀʀᴄʜɪɴɢ ғᴏʀ {series_name} {start_ep_str}-{end_ep_str}...</b>")
-
-            # Use TMDB if poster not provided
-            if not poster_url or not poster_url.startswith("http"):
-                tmdb_details = await get_movie_details(series_name, "tv")
-                if tmdb_details:
-                    # Backdrop urls is a list, pick the first one
-                    poster_url = tmdb_details.get('backdrop_urls')[0] if tmdb_details.get('backdrop_urls') else None
-                    movie_description = tmdb_details.get('overview')
-
-            # Use OpenAI if description still empty
-            if not movie_description:
-                movie_description = await generate_ai_description(series_name)
 
             # Find files for all episodes in range
             all_files = []
@@ -217,7 +183,6 @@ async def post_command(client: Bot, message: Message):
                 f"🎥 QUALITY: {qualities}\n"
                 f"🎧 AUDIO: {audios}\n"
                 f"📁 GENRES: {genres}\n\n"
-                f"📝 DESCRIPTION: {movie_description}\n\n"
                 f"✨ Join Our Main Channel @Movies8777\n"
                 f"━━━━━━━━━━━━━━━━━━━━━━</b>"
             )
@@ -235,7 +200,7 @@ async def post_command(client: Bot, message: Message):
                     batch_string = f"get-{first_id * abs(client.db_channel.id)}-{last_id * abs(client.db_channel.id)}"
                     batch_base64 = await encode(batch_string)
                     batch_link = f"https://t.me/{client.username}?start={batch_base64}"
-                    batch_res_buttons.append(InlineKeyboardButton(f"⚡ {res} Batch", url=batch_link))
+                    batch_res_buttons.append(InlineKeyboardButton(f"⚡ {res}", url=batch_link))
 
                 for i in range(0, len(batch_res_buttons), 3):
                     buttons.append(batch_res_buttons[i:i+3])
@@ -265,7 +230,7 @@ async def post_command(client: Bot, message: Message):
 
             await client.send_photo(
                 chat_id=POST_CHANNEL_ID if POST_CHANNEL_ID else message.chat.id,
-                photo=poster_url if poster_url else "https://telegra.ph/file/71c828230b533e4f620f3.jpg",
+                photo=poster_url,
                 caption=caption,
                 reply_markup=InlineKeyboardMarkup(buttons)
             )
@@ -279,24 +244,11 @@ async def post_command(client: Bot, message: Message):
     else:
         # Movie: /post {movie_name} {poster_url}
         try:
-            if " " in full_query and (full_query.rsplit(None, 1)[1].startswith("http") or full_query.rsplit(None, 1)[1].startswith("https")):
-                movie_name, poster_url = full_query.rsplit(None, 1)
-            else:
-                movie_name = full_query
-                poster_url = None
+            if " " not in full_query:
+                return await message.reply_text("<b>Poster URL missing!</b>\nUse: /post {movie_name} {poster_url}")
 
+            movie_name, poster_url = full_query.rsplit(None, 1)
             search_msg = await message.reply_text(f"<b>Sᴇᴀʀᴄʜɪɴɢ ғᴏʀ {movie_name}...</b>")
-
-            # Use TMDB if poster not provided
-            if not poster_url or not poster_url.startswith("http"):
-                tmdb_details = await get_movie_details(movie_name, "movie")
-                if tmdb_details:
-                    poster_url = tmdb_details.get('backdrop_urls')[0] if tmdb_details.get('backdrop_urls') else None
-                    movie_description = tmdb_details.get('overview')
-
-            # Use OpenAI if description still empty
-            if not movie_description:
-                movie_description = await generate_ai_description(movie_name)
 
             files = await db.find_file(movie_name)
             if not files:
@@ -329,7 +281,6 @@ async def post_command(client: Bot, message: Message):
                 f"🎥 QUALITY: {qualities}\n"
                 f"🎧 AUDIO: {audios}\n"
                 f"📁 GENRES: {genres}\n\n"
-                f"📝 DESCRIPTION: {movie_description}\n\n"
                 f"✨ Join Our Main Channel @Movies8777\n"
                 f"━━━━━━━━━━━━━━━━━━━━━━</b>"
             )
@@ -347,7 +298,7 @@ async def post_command(client: Bot, message: Message):
 
             await client.send_photo(
                 chat_id=POST_CHANNEL_ID if POST_CHANNEL_ID else message.chat.id,
-                photo=poster_url if poster_url else "https://telegra.ph/file/71c828230b533e4f620f3.jpg",
+                photo=poster_url,
                 caption=caption,
                 reply_markup=InlineKeyboardMarkup(buttons)
             )

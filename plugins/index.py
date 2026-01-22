@@ -67,7 +67,7 @@ async def auto_index(client: Bot, message: Message):
                 msg_id=message.id,
                 caption=caption
             )
-            logger.info(f"Auto-indexed file: {file_name} (ID: {message.id})")
+            logger.info(f"[DEBUG] Auto-indexed file: {file_name} (ID: {message.id})")
         except Exception as e:
             logger.error(f"Error in auto-indexing: {e}")
 

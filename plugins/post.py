@@ -1,266 +1,179 @@
 import re
 import asyncio
 from pyrogram import Client, filters
-from pyrogram.types import Message, InlineKeyboardMarkup, InlineKeyboardButton, CallbackQuery
+from pyrogram.types import Message, InlineKeyboardMarkup, InlineKeyboardButton
 from bot import Bot
-from config import CHANNEL_ID, LOGGER, POST_CHANNEL_ID, TUT_VID, OPENAI_API_KEY
+from config import LOGGER, POST_CHANNEL_ID, TUT_VID
 from helper_func import admin, encode
 from database.database import db
-from plugins.tmdb import search_tmdb, get_movie_details
-from openai import AsyncOpenAI
 
 logger = LOGGER(__name__)
-openai_client = AsyncOpenAI(api_key=OPENAI_API_KEY)
 
-# State storage for active sessions
-post_sessions = {}
-
-async def generate_ai_caption(details, files):
-    file_info = "\n".join([f"- Name: {f['file_name']}, Caption: {f.get('caption', '')}" for f in files])
-    title = details['title']
-    release_date = details.get('release_date', 'N/A')
-
-    prompt = f"""
-Analyze the following movie/show details and file information to create a professional Telegram post caption.
-
-Movie Title: {title}
-Release Date: {release_date}
-
-Files:
-{file_info}
-
-Format the output EXACTLY like this example:
-[Movie Title] ([Year]) [Resolutions] [Audio Source] [Codecs] [Audio Tracks] [Subtitles]
-
-Example:
-Glass Onion: A Knives Out Mystery (2022) 720p + 1080p WEBRip x265 10bit HEVC Multi Audio [Hindi DDP 5.1 ~ 448Kbps / HE-AAC 2.0 ~ 128Kbps + English AAC 2.0] ESub
-
-Also provide:
-1. Combined Title Caption (A single line summarizing all qualities)
-2. Individual Quality Titles (One for each unique resolution found)
-3. Audio Tracks list
-
-IMPORTANT: Extract technical details (DDP 5.1, AAC 2.0, x265, HEVC, 10bit, etc.) from the filenames provided. If details are missing, use best guesses based on common patterns.
-"""
-
-    try:
-        response = await openai_client.chat.completions.create(
-            model="gpt-4o",
-            messages=[
-                {"role": "system", "content": "You are a professional movie metadata extractor and Telegram post formatter."},
-                {"role": "user", "content": prompt}
-            ]
-        )
-        return response.choices[0].message.content
-    except Exception as e:
-        logger.error(f"OpenAI error: {e}")
-        return None
+def extract_quality(file_name):
+    res_match = re.search(r'(\d{3,4}p|4[kK])', file_name, re.IGNORECASE)
+    return res_match.group(1).upper() if res_match else "HDR"
 
 @Bot.on_message(filters.command("post") & admin)
 async def post_command(client: Bot, message: Message):
-    if len(message.command) < 2:
-        return await message.reply_text("<b>Usage:</b> /post {movie_name}")
+    # Usage check
+    # /post {movie_name} {poster_url}
+    # /post {series_name} E01 to E06 {poster_url}
 
-    query = message.text.split(" ", 1)[1]
-    search_msg = await message.reply_text("<b>Sᴇᴀʀᴄʜɪɴɢ...</b>")
+    cmd_text = message.text.split(None, 1)
+    if len(cmd_text) < 2:
+        return await message.reply_text("<b>Usage:</b>\n\n<b>Movie:</b> /post {movie_name} {poster_url}\n<b>Series:</b> /post {series_name} E01 to E06 {poster_url}")
 
-    files = await db.find_file(query)
-    if not files:
-        return await search_msg.edit("<b>Nᴏ ғɪʟᴇs ғᴏᴜɴᴅ ɪɴ ᴅᴀᴛᴀʙᴀsᴇ!</b>")
+    full_query = cmd_text[1]
 
-    tmdb_result = await search_tmdb(query)
-    if not tmdb_result:
-        return await search_msg.edit("<b>Nᴏ TMDB ʀᴇsᴜʟᴛs ғᴏᴜɴᴅ!</b>")
+    # Check if it's a series (contains " to ")
+    is_series = " to " in full_query.lower() and re.search(r'E\d+', full_query, re.IGNORECASE)
 
-    tmdb_id = tmdb_result['id']
-    media_type = tmdb_result['media_type']
-    details = await get_movie_details(tmdb_id, media_type)
+    if is_series:
+        # Parse series: {series_name} E{start} to E{end} {poster_url}
+        # Example: The Last of Us E01 to E09 https://example.com/poster.jpg
+        try:
+            match = re.search(r'(.+?)\s+(E\d+)\s+to\s+(E\d+)\s+(.+)', full_query, re.IGNORECASE)
+            if not match:
+                return await message.reply_text("<b>Invalid series format!</b>\nUse: /post {series_name} E01 to E06 {poster_url}")
 
-    if not details:
-        return await search_msg.edit("<b>Fᴀɪʟᴇᴅ ᴛᴏ ғᴇᴛᴄʜ TMDB ᴅᴇᴛᴀɪʟs!</b>")
+            series_name = match.group(1).strip()
+            start_ep_str = match.group(2).upper()
+            end_ep_str = match.group(3).upper()
+            poster_url = match.group(4).strip()
 
-    backdrop_urls = details.get('backdrop_urls', [])
-    if not backdrop_urls:
-        # Ask admin for a link
-        await search_msg.delete()
-        ask = await message.chat.ask("<b>Nᴏ ɪᴍᴀɢᴇs ғᴏᴜɴᴅ ᴏɴ TMDB. Pʟᴇᴀsᴇ sᴇɴᴅ ᴀ ᴅɪʀᴇᴄᴛ ɪᴍᴀɢᴇ ʟɪɴᴋ:</b>", filters=filters.text)
-        backdrop_urls = [ask.text]
+            start_ep = int(start_ep_str[1:])
+            end_ep = int(end_ep_str[1:])
 
-    post_sessions[message.from_user.id] = {
-        'details': details,
-        'files': files,
-        'images': backdrop_urls,
-        'index': 0,
-        'query': query
-    }
+            if start_ep > end_ep:
+                return await message.reply_text("<b>Start episode cannot be greater than end episode!</b>")
 
-    await show_image_selector(message, message.from_user.id)
-    await search_msg.delete()
+            search_msg = await message.reply_text(f"<b>Sᴇᴀʀᴄʜɪɴɢ ғᴏʀ {series_name} {start_ep_str}-{end_ep_str}...</b>")
 
-async def show_image_selector(message, user_id):
-    session = post_sessions[user_id]
-    images = session['images']
-    index = session['index']
-    total = len(images)
-    url = images[index]
-    details = session['details']
+            # Find files for all episodes in range
+            all_files = []
+            for ep_num in range(start_ep, end_ep + 1):
+                ep_tag = f"E{ep_num:02d}"
+                files = await db.find_file(f"{series_name} {ep_tag}")
+                all_files.extend(files)
 
-    caption = (
-        f"<b>{details['title']} ({details['release_date'][:4] if details['release_date'] else 'N/A'})</b>\n\n"
-        f"<b>• Language:</b> {details.get('language', 'N/A')}\n"
-        f"<b>• [ <a href='{url}'>Click Here</a> ]</b>"
-    )
+            if not all_files:
+                return await search_msg.edit("<b>Nᴏ ғɪʟᴇs ғᴏᴜɴᴅ ɪɴ ᴅᴀᴛᴀʙᴀsᴇ!</b>")
 
-    buttons = [
-        [
-            InlineKeyboardButton("<<", callback_data=f"post_img|{user_id}|first"),
-            InlineKeyboardButton("<", callback_data=f"post_img|{user_id}|prev"),
-            InlineKeyboardButton(f"{index + 1}/{total}", callback_data="none"),
-            InlineKeyboardButton(">", callback_data=f"post_img|{user_id}|next"),
-            InlineKeyboardButton(">>", callback_data=f"post_img|{user_id}|last"),
-        ],
-        [
-            InlineKeyboardButton("Sᴇʟᴇᴄᴛ", callback_data=f"post_confirm|{user_id}"),
-            InlineKeyboardButton("Cʟᴏsᴇ", callback_data=f"post_close|{user_id}")
-        ]
-    ]
+            # Grouping files by episode and resolution
+            ep_res_groups = {} # {Episode: {Resolution: [link]}}
+            for file in all_files:
+                file_name = file['file_name']
+                ep_match = re.search(r'E(\d{2,3})', file_name, re.IGNORECASE)
+                if not ep_match: continue
+                ep_val = f"E{int(ep_match.group(1)):02d}"
 
-    await message.reply_photo(
-        photo=url,
-        caption=caption,
-        reply_markup=InlineKeyboardMarkup(buttons)
-    )
+                if ep_val not in ep_res_groups:
+                    ep_res_groups[ep_val] = {}
 
-@Bot.on_callback_query(filters.regex(r"^post_img\|"))
-async def image_selector_callback(client: Bot, query: CallbackQuery):
-    _, user_id, action = query.data.split("|")
-    user_id = int(user_id)
+                res = extract_quality(file_name)
+                if res not in ep_res_groups[ep_val]:
+                    ep_res_groups[ep_val][res] = []
 
-    if query.from_user.id != user_id:
-        return await query.answer("Nᴏᴛ ʏᴏᴜʀ sᴇssɪᴏɴ!", show_alert=True)
+                string = f"get-{file['msg_id'] * abs(client.db_channel.id)}"
+                base64_string = await encode(string)
+                link = f"https://t.me/{client.username}?start={base64_string}"
+                ep_res_groups[ep_val][res].append(link)
 
-    session = post_sessions.get(user_id)
-    if not session:
-        return await query.answer("Sᴇssɪᴏɴ ᴇxᴘɪʀᴇᴅ!", show_alert=True)
+            # Caption and Buttons
+            caption = f"<b>🎬 {series_name} ({start_ep_str}-{end_ep_str})\n\n"
+            caption += f"✨ Join Our Main Channel @Movies8777\n"
+            caption += f"━━━━━━━━━━━━━━━━━━━━━━</b>"
 
-    images = session['images']
-    index = session['index']
-    total = len(images)
+            buttons = []
+            # Sort episodes
+            for ep in sorted(ep_res_groups.keys()):
+                ep_buttons = []
+                # Sort resolutions
+                for res in sorted(ep_res_groups[ep].keys()):
+                    # Use the first link found for that resolution
+                    link = ep_res_groups[ep][res][0]
+                    ep_buttons.append(InlineKeyboardButton(f"{ep} {res}", url=link))
 
-    if action == "first":
-        index = 0
-    elif action == "last":
-        index = total - 1
-    elif action == "prev":
-        index = (index - 1) % total
-    elif action == "next":
-        index = (index + 1) % total
+                # Add episode buttons in rows
+                for i in range(0, len(ep_buttons), 3):
+                    buttons.append(ep_buttons[i:i+3])
 
-    session['index'] = index
-    url = images[index]
-    details = session['details']
+            # Batch link logic (if multiple files exist)
+            if all_files:
+                msg_ids = [f['msg_id'] for f in all_files]
+                first_id = min(msg_ids)
+                last_id = max(msg_ids)
 
-    caption = (
-        f"<b>{details['title']} ({details['release_date'][:4] if details['release_date'] else 'N/A'})</b>\n\n"
-        f"<b>• Language:</b> {details.get('language', 'N/A')}\n"
-        f"<b>• [ <a href='{url}'>Click Here</a> ]</b>"
-    )
+                batch_string = f"get-{first_id * abs(client.db_channel.id)}-{last_id * abs(client.db_channel.id)}"
+                batch_base64 = await encode(batch_string)
+                batch_link = f"https://t.me/{client.username}?start={batch_base64}"
 
-    buttons = [
-        [
-            InlineKeyboardButton("<<", callback_data=f"post_img|{user_id}|first"),
-            InlineKeyboardButton("<", callback_data=f"post_img|{user_id}|prev"),
-            InlineKeyboardButton(f"{index + 1}/{total}", callback_data="none"),
-            InlineKeyboardButton(">", callback_data=f"post_img|{user_id}|next"),
-            InlineKeyboardButton(">>", callback_data=f"post_img|{user_id}|last"),
-        ],
-        [
-            InlineKeyboardButton("Sᴇʟᴇᴄᴛ", callback_data=f"post_confirm|{user_id}"),
-            InlineKeyboardButton("Cʟᴏsᴇ", callback_data=f"post_close|{user_id}")
-        ]
-    ]
+                buttons.append([InlineKeyboardButton("🎁 Bᴀᴛᴄʜ Dᴏᴡɴʟᴏᴀᴅ (Aʟʟ Eᴘs) 🎁", url=batch_link)])
 
-    try:
-        from pyrogram.types import InputMediaPhoto
-        await query.message.edit_media(
-            media=InputMediaPhoto(url, caption=caption),
-            reply_markup=InlineKeyboardMarkup(buttons)
-        )
-    except Exception as e:
-        logger.error(f"Error updating image: {e}")
-        await query.answer("Error updating image.")
+            buttons.append([InlineKeyboardButton("🍿 Hᴏᴡ Tᴏ Dᴏᴡɴʟᴏᴀᴅ 🍿", url=TUT_VID)])
 
-@Bot.on_callback_query(filters.regex(r"^post_confirm\|"))
-async def confirm_post_callback(client: Bot, query: CallbackQuery):
-    user_id = int(query.data.split("|")[1])
+            await client.send_photo(
+                chat_id=POST_CHANNEL_ID if POST_CHANNEL_ID else message.chat.id,
+                photo=poster_url,
+                caption=caption,
+                reply_markup=InlineKeyboardMarkup(buttons)
+            )
+            await search_msg.delete()
+            await message.reply_text("<b>✅ Series Post Sent!</b>")
 
-    if query.from_user.id != user_id:
-        return await query.answer("Nᴏᴛ ʏᴏᴜʀ sᴇssɪᴏɴ!", show_alert=True)
+        except Exception as e:
+            logger.error(f"Error in series post: {e}")
+            return await message.reply_text(f"<b>Error:</b> {e}")
 
-    session = post_sessions.get(user_id)
-    if not session:
-        return await query.answer("Sᴇssɪᴏɴ ᴇxᴘɪʀᴇᴅ!", show_alert=True)
-
-    await query.answer("Gᴇɴᴇʀᴀᴛɪɴɢ Cᴀᴘᴛɪᴏɴ ᴡɪᴛʜ AI...")
-    await query.message.edit_caption("<b>⚡ Gᴇɴᴇʀᴀᴛɪɴɢ Cᴀᴘᴛɪᴏɴ ᴡɪᴛʜ AI... Pʟᴇᴀsᴇ ᴡᴀɪᴛ.</b>")
-
-    details = session['details']
-    files = session['files']
-    selected_image = session['images'][session['index']]
-
-    ai_caption = await generate_ai_caption(details, files)
-    if not ai_caption:
-        ai_caption = f"<b>🎬 {details['title']} ({details.get('release_date', '')[:4]})</b>\n\n(AI Gᴇɴᴇʀᴀᴛɪᴏɴ Fᴀɪʟᴇᴅ)"
-
-    # Resolution buttons logic (similar to before)
-    res_groups = {}
-    for file in files:
-        file_name = file['file_name']
-        res_match = re.search(r'(\d{3,4}p|4[kK])', file_name, re.IGNORECASE)
-        res = res_match.group(1).upper() if res_match else "OTHERS"
-
-        if res not in res_groups:
-            res_groups[res] = []
-
-        string = f"get-{file['msg_id'] * abs(client.db_channel.id)}"
-        base64_string = await encode(string)
-        link = f"https://t.me/{client.username}?start={base64_string}"
-        res_groups[res].append((res, link))
-
-    buttons = []
-    all_buttons = []
-    for res in sorted(res_groups.keys()):
-        for res_label, link in res_groups[res]:
-            all_buttons.append(InlineKeyboardButton(f"⚡ {res_label}", url=link))
-
-    for i in range(0, len(all_buttons), 3):
-        buttons.append(all_buttons[i:i+3])
-
-    buttons.append([InlineKeyboardButton("🍿 Hᴏᴡ Tᴏ Dᴏᴡɴʟᴏᴀᴅ 🍿", url=TUT_VID)])
-
-    target_chat = POST_CHANNEL_ID if POST_CHANNEL_ID else query.message.chat.id
-
-    try:
-        await client.send_photo(
-            chat_id=target_chat,
-            photo=selected_image,
-            caption=f"<b>{ai_caption}</b>"[:1024],
-            reply_markup=InlineKeyboardMarkup(buttons)
-        )
-        await query.message.delete()
-        await client.send_message(query.message.chat.id, "<b>✅ Pᴏsᴛ Sᴇɴᴛ Sᴜᴄᴄᴇssғᴜʟʟʏ!</b>")
-    except Exception as e:
-        logger.error(f"Error sending post: {e}")
-        await query.message.edit_caption(f"<b>❌ Eʀʀᴏʀ:</b> {e}")
-
-    del post_sessions[user_id]
-
-@Bot.on_callback_query(filters.regex(r"^post_close\|"))
-async def close_post_callback(client: Bot, query: CallbackQuery):
-    user_id = int(query.data.split("|")[1])
-    if query.from_user.id == user_id:
-        await query.message.delete()
-        if user_id in post_sessions:
-            del post_sessions[user_id]
     else:
-        await query.answer("Nᴏᴛ ʏᴏᴜʀ sᴇssɪᴏɴ!", show_alert=True)
+        # Movie: /post {movie_name} {poster_url}
+        try:
+            if " " not in full_query:
+                return await message.reply_text("<b>Poster URL missing!</b>\nUse: /post {movie_name} {poster_url}")
+
+            movie_name, poster_url = full_query.rsplit(None, 1)
+            search_msg = await message.reply_text(f"<b>Sᴇᴀʀᴄʜɪɴɢ ғᴏʀ {movie_name}...</b>")
+
+            files = await db.find_file(movie_name)
+            if not files:
+                return await search_msg.edit("<b>Nᴏ ғɪʟᴇs ғᴏᴜɴᴅ ɪɴ ᴅᴀᴛᴀʙᴀsᴇ!</b>")
+
+            # Group by resolution
+            res_groups = {}
+            for file in files:
+                res = extract_quality(file['file_name'])
+                if res not in res_groups:
+                    res_groups[res] = []
+
+                string = f"get-{file['msg_id'] * abs(client.db_channel.id)}"
+                base64_string = await encode(string)
+                link = f"https://t.me/{client.username}?start={base64_string}"
+                res_groups[res].append(link)
+
+            caption = f"<b>🎬 {movie_name}\n\n"
+            caption += f"✨ Join Our Main Channel @Movies8777\n"
+            caption += f"━━━━━━━━━━━━━━━━━━━━━━</b>"
+
+            buttons = []
+            all_res_buttons = []
+            for res in sorted(res_groups.keys()):
+                link = res_groups[res][0] # Pick one link per resolution
+                all_res_buttons.append(InlineKeyboardButton(f"⚡ {res}", url=link))
+
+            for i in range(0, len(all_res_buttons), 3):
+                buttons.append(all_res_buttons[i:i+3])
+
+            buttons.append([InlineKeyboardButton("🍿 Hᴏᴡ Tᴏ Dᴏᴡɴʟᴏᴀᴅ 🍿", url=TUT_VID)])
+
+            await client.send_photo(
+                chat_id=POST_CHANNEL_ID if POST_CHANNEL_ID else message.chat.id,
+                photo=poster_url,
+                caption=caption,
+                reply_markup=InlineKeyboardMarkup(buttons)
+            )
+            await search_msg.delete()
+            await message.reply_text("<b>✅ Movie Post Sent!</b>")
+
+        except Exception as e:
+            logger.error(f"Error in movie post: {e}")
+            return await message.reply_text(f"<b>Error:</b> {e}")

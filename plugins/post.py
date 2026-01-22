@@ -9,21 +9,23 @@ from database.database import db
 
 logger = LOGGER(__name__)
 
-def extract_quality(file_name):
-    # Match common resolutions
-    res_match = re.search(r'(\d{3,4}p|4[kK])', file_name, re.IGNORECASE)
-    if res_match:
-        return res_match.group(1).upper()
+def extract_quality(file_names):
+    qualities = set()
+    for name in file_names:
+        res_match = re.search(r'(\d{3,4}p|4[kK])', name, re.IGNORECASE)
+        if res_match:
+            qualities.add(res_match.group(1).lower())
 
-    # Check for other quality indicators
-    if re.search(r'BluRay|BRRip|BDRip', file_name, re.IGNORECASE):
-        return "BluRay"
-    if re.search(r'WEB-DL|WEBRip', file_name, re.IGNORECASE):
-        return "WEB-DL"
-    if re.search(r'HDRip|DVDRip', file_name, re.IGNORECASE):
-        return "HDRip"
+    if not qualities:
+        return None
 
-    return "HDR"
+    # Sort qualities (480p, 720p, 1080p, 4k)
+    def q_sort(q):
+        val = re.sub(r'p|k', '', q, flags=re.I)
+        return int(val) if val.isdigit() else 0
+
+    sorted_q = sorted(list(qualities), key=q_sort)
+    return " - ".join(sorted_q)
 
 def extract_year(file_names):
     years = set()
@@ -32,7 +34,7 @@ def extract_year(file_names):
         if match:
             years.add(int(match.group()))
     if not years:
-        return "N/A"
+        return None
     if len(years) == 1:
         return str(list(years)[0])
     return f"{min(years)} - {max(years)}"
@@ -59,49 +61,18 @@ def extract_audio(file_names):
                 audios.add(label)
 
     if not audios:
-        return "Hindi"
+        return None
 
     # Priority sorting or just alphabetical
     res = sorted(list(audios))
     return " ".join(res)
-
-def extract_genres(file_names):
-    genres = set()
-    patterns = {
-        'Action': r'Action',
-        'Adventure': r'Adventure',
-        'Animation': r'Animation',
-        'Comedy': r'Comedy',
-        'Crime': r'Crime',
-        'Documentary': r'Documentary',
-        'Drama': r'Drama',
-        'Family': r'Family',
-        'Fantasy': r'Fantasy',
-        'History': r'History',
-        'Horror': r'Horror',
-        'Music': r'Music',
-        'Mystery': r'Mystery',
-        'Romance': r'Romance',
-        'Sci-Fi': r'Sci-Fi|Science Fiction',
-        'Thriller': r'Thriller',
-        'War': r'War',
-        'Western': r'Western'
-    }
-    for name in file_names:
-        for label, pattern in patterns.items():
-            if re.search(pattern, name, re.IGNORECASE):
-                genres.add(label)
-
-    if not genres:
-        return "Drama"
-
-    return " | ".join(sorted(list(genres)))
 
 @Bot.on_message(filters.command("post") & admin)
 async def post_command(client: Bot, message: Message):
     # Usage check
     # /post {movie_name} {poster_url}
     # /post {series_name} E01 to E06 {poster_url}
+    # /post {series_name} S01 to S03 {poster_url}
 
     cmd_text = message.text.split(None, 1)
     if len(cmd_text) < 2:
@@ -110,54 +81,60 @@ async def post_command(client: Bot, message: Message):
     full_query = cmd_text[1]
 
     # Check if it's a series (contains " to ")
-    is_series = " to " in full_query.lower() and re.search(r'E\d+', full_query, re.IGNORECASE)
+    is_series = " to " in full_query.lower() and re.search(r'[ES]\d+', full_query, re.IGNORECASE)
 
     if is_series:
-        # Parse series: {series_name} E{start} to E{end} {poster_url}
         try:
-            match = re.search(r'(.+?)\s+(E\d+)\s+to\s+(E\d+)\s+(.+)', full_query, re.IGNORECASE)
+            # Match E01 to E06 or S01 to S03
+            match = re.search(r'(.+?)\s+([ES]\d+)\s+to\s+([ES]\d+)\s+(.+)', full_query, re.IGNORECASE)
             if not match:
                 return await message.reply_text("<b>Invalid series format!</b>\nUse: /post {series_name} E01 to E06 {poster_url}")
 
             series_name = match.group(1).strip()
-            start_ep_str = match.group(2).upper()
-            end_ep_str = match.group(3).upper()
+            start_str = match.group(2).upper()
+            end_str = match.group(3).upper()
             poster_url = match.group(4).strip()
 
-            start_ep = int(start_ep_str[1:])
-            end_ep = int(end_ep_str[1:])
+            is_season = start_str.startswith('S')
+            prefix = 'S' if is_season else 'E'
 
-            if start_ep > end_ep:
-                return await message.reply_text("<b>Start episode cannot be greater than end episode!</b>")
+            start_val = int(start_str[1:])
+            end_val = int(end_str[1:])
 
-            search_msg = await message.reply_text(f"<b>Sᴇᴀʀᴄʜɪɴɢ ғᴏʀ {series_name} {start_ep_str}-{end_ep_str}...</b>")
+            if start_val > end_val:
+                return await message.reply_text("<b>Start value cannot be greater than end value!</b>")
 
-            # Find files for all episodes in range
+            search_msg = await message.reply_text(f"<b>Sᴇᴀʀᴄʜɪɴɢ ғᴏʀ {series_name} {start_str}-{end_str}...</b>")
+
+            # Find files
             all_files = []
-            for ep_num in range(start_ep, end_ep + 1):
-                ep_tag = f"E{ep_num:02d}"
-                files = await db.find_file(f"{series_name} {ep_tag}")
+            for val in range(start_val, end_val + 1):
+                tag = f"{prefix}{val:02d}"
+                files = await db.find_file(f"{series_name} {tag}")
                 all_files.extend(files)
 
             if not all_files:
                 return await search_msg.edit("<b>Nᴏ ғɪʟᴇs ғᴏᴜɴᴅ ɪɴ ᴅᴀᴛᴀʙᴀsᴇ!</b>")
 
-            # Grouping files by episode and resolution
-            ep_res_groups = {} # {Episode: {Resolution: [link]}}
+            # Grouping files by episode/season and resolution
             res_groups = {} # {Resolution: [file_objects]}
+            ep_res_groups = {} # {Ep/Season: {Res: [link]}}
 
             for file in all_files:
                 file_name = file['file_name']
-                ep_match = re.search(r'E(\d{2,3})', file_name, re.IGNORECASE)
-                if not ep_match: continue
-                ep_val = f"E{int(ep_match.group(1)):02d}"
+                tag_match = re.search(rf'{prefix}(\d{{2,3}})', file_name, re.IGNORECASE)
+                if not tag_match: continue
+                tag_val = f"{prefix}{int(tag_match.group(1)):02d}"
 
-                if ep_val not in ep_res_groups:
-                    ep_res_groups[ep_val] = {}
+                if tag_val not in ep_res_groups:
+                    ep_res_groups[tag_val] = {}
 
-                res = extract_quality(file_name)
-                if res not in ep_res_groups[ep_val]:
-                    ep_res_groups[ep_val][res] = []
+                # Extract quality for this specific file
+                res = re.search(r'(\d{3,4}p|4[kK])', file_name, re.IGNORECASE)
+                res = res.group(1).lower() if res else "hdr"
+
+                if res not in ep_res_groups[tag_val]:
+                    ep_res_groups[tag_val][res] = []
 
                 if res not in res_groups:
                     res_groups[res] = []
@@ -166,32 +143,42 @@ async def post_command(client: Bot, message: Message):
                 string = f"get-{file['msg_id'] * abs(client.db_channel.id)}"
                 base64_string = await encode(string)
                 link = f"https://t.me/{client.username}?start={base64_string}"
-                ep_res_groups[ep_val][res].append(link)
+                ep_res_groups[tag_val][res].append(link)
 
-            # Caption and Buttons
-            qualities = " + ".join(sorted(list(set(extract_quality(f['file_name']) for f in all_files))))
-            years = extract_year([f['file_name'] for f in all_files])
-            audios = extract_audio([f.get('caption') or f['file_name'] for f in all_files])
-            genres = extract_genres([f.get('caption') or f['file_name'] for f in all_files])
+            # Metadata extraction
+            all_metadata_sources = [f.get('caption') or f['file_name'] for f in all_files]
+            qualities = extract_quality(all_metadata_sources)
+            years = extract_year(all_metadata_sources)
+            audios = extract_audio(all_metadata_sources)
 
-            title = series_name.upper()
-            header = f"<b>{title} ({years}) {qualities} {audios}</b>"
-            caption = (
-                f"{header}\n\n"
-                f"<b>⭐ TITLE: {title}\n"
-                f"📺 YEAR: {years}\n"
-                f"🎥 QUALITY: {qualities}\n"
-                f"🎧 AUDIO: {audios}\n"
-                f"📁 GENRES: {genres}\n\n"
-                f"✨ Join Our Main Channel @Movies8777\n"
+            # Caption Construction
+            if start_str == end_str:
+                season_info = start_str
+            else:
+                season_info = f"{start_str} - {end_str}"
+
+            caption = f"<b>📼 Series: {series_name} {season_info}\n"
+            if years:
+                caption += f"📅 Year: {years}\n"
+            if qualities:
+                caption += f"🎥 Quality: {qualities} COMBiNED\n"
+            if audios:
+                caption += f"🔊 Audio: {audios}\n"
+
+            caption += (
+                f"\n✨ Join Our Main Channel @Movies8777\n"
                 f"━━━━━━━━━━━━━━━━━━━━━━</b>"
             )
 
             buttons = []
             if len(ep_res_groups) > 1:
-                # Multiple episodes: Only show resolution batch buttons
+                # Multiple items: Show resolution buttons
+                def q_sort(q):
+                    val = re.sub(r'p|k', '', q, flags=re.I)
+                    return int(val) if val.isdigit() else 0
+
                 batch_res_buttons = []
-                for res in sorted(res_groups.keys()):
+                for res in sorted(res_groups.keys(), key=q_sort):
                     res_files = res_groups[res]
                     msg_ids = [f['msg_id'] for f in res_files]
                     first_id = min(msg_ids)
@@ -200,19 +187,19 @@ async def post_command(client: Bot, message: Message):
                     batch_string = f"get-{first_id * abs(client.db_channel.id)}-{last_id * abs(client.db_channel.id)}"
                     batch_base64 = await encode(batch_string)
                     batch_link = f"https://t.me/{client.username}?start={batch_base64}"
-                    batch_res_buttons.append(InlineKeyboardButton(f"⚡ {res}", url=batch_link))
+                    batch_res_buttons.append(InlineKeyboardButton(f"⚡ {res.upper()}", url=batch_link))
 
                 for i in range(0, len(batch_res_buttons), 3):
                     buttons.append(batch_res_buttons[i:i+3])
             else:
-                # Single episode: show normal episode buttons
-                for ep in sorted(ep_res_groups.keys()):
-                    ep_buttons = []
-                    for res in sorted(ep_res_groups[ep].keys()):
-                        link = ep_res_groups[ep][res][0]
-                        ep_buttons.append(InlineKeyboardButton(f"{ep} {res}", url=link))
-                    for i in range(0, len(ep_buttons), 3):
-                        buttons.append(ep_buttons[i:i+3])
+                # Single item: show normal buttons
+                for tag in sorted(ep_res_groups.keys()):
+                    tag_buttons = []
+                    for res in sorted(ep_res_groups[tag].keys()):
+                        link = ep_res_groups[tag][res][0]
+                        tag_buttons.append(InlineKeyboardButton(f"{tag} {res.upper()}", url=link))
+                    for i in range(0, len(tag_buttons), 3):
+                        buttons.append(tag_buttons[i:i+3])
 
             # Global Batch link
             if all_files:
@@ -257,7 +244,8 @@ async def post_command(client: Bot, message: Message):
             # Group by resolution
             res_groups = {}
             for file in files:
-                res = extract_quality(file['file_name'])
+                res_match = re.search(r'(\d{3,4}p|4[kK])', file['file_name'], re.IGNORECASE)
+                res = res_match.group(1).lower() if res_match else "hdr"
                 if res not in res_groups:
                     res_groups[res] = []
 
@@ -266,30 +254,34 @@ async def post_command(client: Bot, message: Message):
                 link = f"https://t.me/{client.username}?start={base64_string}"
                 res_groups[res].append(link)
 
-            # Caption and Buttons
-            qualities = " + ".join(sorted(list(set(extract_quality(f['file_name']) for f in files))))
-            years = extract_year([f['file_name'] for f in files])
-            audios = extract_audio([f.get('caption') or f['file_name'] for f in files])
-            genres = extract_genres([f.get('caption') or f['file_name'] for f in files])
+            # Metadata extraction
+            all_metadata_sources = [f.get('caption') or f['file_name'] for f in files]
+            qualities = extract_quality(all_metadata_sources)
+            years = extract_year(all_metadata_sources)
+            audios = extract_audio(all_metadata_sources)
 
-            title = movie_name.upper()
-            header = f"<b>{title} ({years}) {qualities} {audios}</b>"
-            caption = (
-                f"{header}\n\n"
-                f"<b>⭐ TITLE: {title}\n"
-                f"📺 YEAR: {years}\n"
-                f"🎥 QUALITY: {qualities}\n"
-                f"🎧 AUDIO: {audios}\n"
-                f"📁 GENRES: {genres}\n\n"
-                f"✨ Join Our Main Channel @Movies8777\n"
+            caption = f"<b>📼 Movie: {movie_name}\n"
+            if years:
+                caption += f"📅 Year: {years}\n"
+            if qualities:
+                caption += f"🎥 Quality: {qualities} COMBiNED\n"
+            if audios:
+                caption += f"🔊 Audio: {audios}\n"
+
+            caption += (
+                f"\n✨ Join Our Main Channel @Movies8777\n"
                 f"━━━━━━━━━━━━━━━━━━━━━━</b>"
             )
 
             buttons = []
+            def q_sort(q):
+                val = re.sub(r'p|k', '', q, flags=re.I)
+                return int(val) if val.isdigit() else 0
+
             all_res_buttons = []
-            for res in sorted(res_groups.keys()):
-                link = res_groups[res][0] # Pick one link per resolution
-                all_res_buttons.append(InlineKeyboardButton(f"⚡ {res}", url=link))
+            for res in sorted(res_groups.keys(), key=q_sort):
+                link = res_groups[res][0]
+                all_res_buttons.append(InlineKeyboardButton(f"⚡ {res.upper()}", url=link))
 
             for i in range(0, len(all_res_buttons), 3):
                 buttons.append(all_res_buttons[i:i+3])

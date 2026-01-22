@@ -206,17 +206,6 @@ async def post_command(client: Bot, message: Message):
                     for i in range(0, len(tag_buttons), 3):
                         buttons.append(tag_buttons[i:i+3])
 
-            # Global Batch link
-            if all_files:
-                msg_ids = [f['msg_id'] for f in all_files]
-                first_id = min(msg_ids)
-                last_id = max(msg_ids)
-
-                batch_string = f"get-{first_id * abs(client.db_channel.id)}-{last_id * abs(client.db_channel.id)}"
-                batch_base64 = await encode(batch_string)
-                batch_link = f"https://t.me/{client.username}?start={batch_base64}"
-
-                buttons.append([InlineKeyboardButton("Bᴀᴛᴄʜ Dᴏᴡɴʟᴏᴀᴅ (Aʟʟ Eᴘs)", url=batch_link)])
 
             buttons.append([InlineKeyboardButton("Hᴏᴡ Tᴏ Dᴏᴡɴʟᴏᴀᴅ", url=TUT_VID)])
 
@@ -321,14 +310,6 @@ async def post_command(client: Bot, message: Message):
                 for i in range(0, len(batch_res_buttons), 3):
                     buttons.append(batch_res_buttons[i:i+3])
 
-                if all_files:
-                    msg_ids = [f['msg_id'] for f in all_files]
-                    first_id = min(msg_ids)
-                    last_id = max(msg_ids)
-                    batch_string = f"get-{first_id * abs(client.db_channel.id)}-{last_id * abs(client.db_channel.id)}"
-                    batch_base64 = await encode(batch_string)
-                    batch_link = f"https://t.me/{client.username}?start={batch_base64}"
-                    buttons.append([InlineKeyboardButton("Bᴀᴛᴄʜ Dᴏᴡɴʟᴏᴀᴅ (Aʟʟ Sᴇᴀsᴏɴs)", url=batch_link)])
 
                 buttons.append([InlineKeyboardButton("Hᴏᴡ Tᴏ Dᴏᴡɴʟᴏᴀᴅ", url=TUT_VID)])
 

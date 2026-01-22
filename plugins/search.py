@@ -7,7 +7,7 @@ from helper_func import is_subscribed, encode
 from database.database import db
 import asyncio
 
-@Bot.on_message(filters.private & filters.text & ~filters.regex("^/"))
+@Bot.on_message(filters.command("search") & filters.private)
 async def search_handler(client: Client, message: Message):
     # Check force sub
     if not await is_subscribed(client, message.from_user.id):
@@ -18,9 +18,12 @@ async def search_handler(client: Client, message: Message):
             print(f"Error importing not_joined: {e}")
             return await message.reply("Please join our channel to use this bot.")
 
-    query = message.text.strip()
+    if len(message.command) < 2:
+        return await message.reply_text("<b>Usage: /search {movie_name}</b>")
+
+    query = message.text.split(None, 1)[1].strip()
     if len(query) < 3:
-        return
+        return await message.reply_text("<b>Query must be at least 3 characters long!</b>")
 
     search_msg = await message.reply_text("<b>Sᴇᴀʀᴄʜɪɴɢ...</b>")
     files = await db.find_file(query)

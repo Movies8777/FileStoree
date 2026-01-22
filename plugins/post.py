@@ -3,15 +3,46 @@ import asyncio
 from pyrogram import Client, filters
 from pyrogram.types import Message, InlineKeyboardMarkup, InlineKeyboardButton
 from bot import Bot
-from config import LOGGER, POST_CHANNEL_ID, TUT_VID
+from config import LOGGER, POST_CHANNEL_ID, TUT_VID, OPENAI_API_KEY
 from helper_func import admin, encode
 from database.database import db
+from plugins.tmdb import get_movie_poster, get_movie_details
+from openai import OpenAI
 
 logger = LOGGER(__name__)
 
+# Initialize OpenAI client
+client_ai = OpenAI(api_key=OPENAI_API_KEY)
+
+async def generate_ai_description(title):
+    try:
+        response = client_ai.chat.completions.create(
+            model="gpt-3.5-turbo",
+            messages=[
+                {"role": "system", "content": "You are a movie expert. Provide a very short (max 20 words) and catchy description for the given movie/series."},
+                {"role": "user", "content": title}
+            ]
+        )
+        return response.choices[0].message.content
+    except Exception as e:
+        logger.error(f"OpenAI error: {e}")
+        return ""
+
 def extract_quality(file_name):
+    # Match common resolutions
     res_match = re.search(r'(\d{3,4}p|4[kK])', file_name, re.IGNORECASE)
-    return res_match.group(1).upper() if res_match else "HDR"
+    if res_match:
+        return res_match.group(1).upper()
+
+    # Check for other quality indicators
+    if re.search(r'BluRay|BRRip|BDRip', file_name, re.IGNORECASE):
+        return "BluRay"
+    if re.search(r'WEB-DL|WEBRip', file_name, re.IGNORECASE):
+        return "WEB-DL"
+    if re.search(r'HDRip|DVDRip', file_name, re.IGNORECASE):
+        return "HDRip"
+
+    return "HDR"
 
 def extract_year(file_names):
     years = set()
@@ -53,6 +84,38 @@ def extract_audio(file_names):
     res = sorted(list(audios))
     return " ".join(res)
 
+def extract_genres(file_names):
+    genres = set()
+    patterns = {
+        'Action': r'Action',
+        'Adventure': r'Adventure',
+        'Animation': r'Animation',
+        'Comedy': r'Comedy',
+        'Crime': r'Crime',
+        'Documentary': r'Documentary',
+        'Drama': r'Drama',
+        'Family': r'Family',
+        'Fantasy': r'Fantasy',
+        'History': r'History',
+        'Horror': r'Horror',
+        'Music': r'Music',
+        'Mystery': r'Mystery',
+        'Romance': r'Romance',
+        'Sci-Fi': r'Sci-Fi|Science Fiction',
+        'Thriller': r'Thriller',
+        'War': r'War',
+        'Western': r'Western'
+    }
+    for name in file_names:
+        for label, pattern in patterns.items():
+            if re.search(pattern, name, re.IGNORECASE):
+                genres.add(label)
+
+    if not genres:
+        return "Drama"
+
+    return " | ".join(sorted(list(genres)))
+
 @Bot.on_message(filters.command("post") & admin)
 async def post_command(client: Bot, message: Message):
     # Usage check
@@ -61,25 +124,27 @@ async def post_command(client: Bot, message: Message):
 
     cmd_text = message.text.split(None, 1)
     if len(cmd_text) < 2:
-        return await message.reply_text("<b>Usage:</b>\n\n<b>Movie:</b> /post {movie_name} {poster_url}\n<b>Series:</b> /post {series_name} E01 to E06 {poster_url}")
+        return await message.reply_text("<b>Usage:</b>\n\n<b>Movie:</b> /post {movie_name} {optional_poster_url}\n<b>Series:</b> /post {series_name} E01 to E06 {optional_poster_url}")
 
     full_query = cmd_text[1]
 
     # Check if it's a series (contains " to ")
     is_series = " to " in full_query.lower() and re.search(r'E\d+', full_query, re.IGNORECASE)
 
+    poster_url = None
+    movie_description = None
+
     if is_series:
         # Parse series: {series_name} E{start} to E{end} {poster_url}
-        # Example: The Last of Us E01 to E09 https://example.com/poster.jpg
         try:
-            match = re.search(r'(.+?)\s+(E\d+)\s+to\s+(E\d+)\s+(.+)', full_query, re.IGNORECASE)
+            match = re.search(r'(.+?)\s+(E\d+)\s+to\s+(E\d+)(?:\s+(.+))?', full_query, re.IGNORECASE)
             if not match:
                 return await message.reply_text("<b>Invalid series format!</b>\nUse: /post {series_name} E01 to E06 {poster_url}")
 
             series_name = match.group(1).strip()
             start_ep_str = match.group(2).upper()
             end_ep_str = match.group(3).upper()
-            poster_url = match.group(4).strip()
+            poster_url = match.group(4).strip() if match.group(4) else None
 
             start_ep = int(start_ep_str[1:])
             end_ep = int(end_ep_str[1:])
@@ -88,6 +153,18 @@ async def post_command(client: Bot, message: Message):
                 return await message.reply_text("<b>Start episode cannot be greater than end episode!</b>")
 
             search_msg = await message.reply_text(f"<b>Sᴇᴀʀᴄʜɪɴɢ ғᴏʀ {series_name} {start_ep_str}-{end_ep_str}...</b>")
+
+            # Use TMDB if poster not provided
+            if not poster_url or not poster_url.startswith("http"):
+                tmdb_details = await get_movie_details(series_name, "tv")
+                if tmdb_details:
+                    # Backdrop urls is a list, pick the first one
+                    poster_url = tmdb_details.get('backdrop_urls')[0] if tmdb_details.get('backdrop_urls') else None
+                    movie_description = tmdb_details.get('overview')
+
+            # Use OpenAI if description still empty
+            if not movie_description:
+                movie_description = await generate_ai_description(series_name)
 
             # Find files for all episodes in range
             all_files = []
@@ -101,6 +178,8 @@ async def post_command(client: Bot, message: Message):
 
             # Grouping files by episode and resolution
             ep_res_groups = {} # {Episode: {Resolution: [link]}}
+            res_groups = {} # {Resolution: [file_objects]}
+
             for file in all_files:
                 file_name = file['file_name']
                 ep_match = re.search(r'E(\d{2,3})', file_name, re.IGNORECASE)
@@ -114,40 +193,63 @@ async def post_command(client: Bot, message: Message):
                 if res not in ep_res_groups[ep_val]:
                     ep_res_groups[ep_val][res] = []
 
+                if res not in res_groups:
+                    res_groups[res] = []
+                res_groups[res].append(file)
+
                 string = f"get-{file['msg_id'] * abs(client.db_channel.id)}"
                 base64_string = await encode(string)
                 link = f"https://t.me/{client.username}?start={base64_string}"
                 ep_res_groups[ep_val][res].append(link)
 
             # Caption and Buttons
-            qualities = " - ".join(sorted(list(set(extract_quality(f['file_name']) for f in all_files))))
+            qualities = " + ".join(sorted(list(set(extract_quality(f['file_name']) for f in all_files))))
             years = extract_year([f['file_name'] for f in all_files])
-            audios = extract_audio([f['file_name'] for f in all_files])
+            audios = extract_audio([f.get('caption') or f['file_name'] for f in all_files])
+            genres = extract_genres([f.get('caption') or f['file_name'] for f in all_files])
 
+            title = series_name.upper()
+            header = f"<b>{title} ({years}) {qualities} {audios}</b>"
             caption = (
-                f"<b>📼 Series: {series_name}\n"
-                f"📅 Year: {years}\n"
-                f"🎥 Quality: {qualities}\n"
-                f"🔊 Audio: {audios}\n\n"
+                f"{header}\n\n"
+                f"<b>⭐ TITLE: {title}\n"
+                f"📺 YEAR: {years}\n"
+                f"🎥 QUALITY: {qualities}\n"
+                f"🎧 AUDIO: {audios}\n"
+                f"📁 GENRES: {genres}\n\n"
+                f"📝 DESCRIPTION: {movie_description}\n\n"
                 f"✨ Join Our Main Channel @Movies8777\n"
                 f"━━━━━━━━━━━━━━━━━━━━━━</b>"
             )
 
             buttons = []
-            # Sort episodes
-            for ep in sorted(ep_res_groups.keys()):
-                ep_buttons = []
-                # Sort resolutions
-                for res in sorted(ep_res_groups[ep].keys()):
-                    # Use the first link found for that resolution
-                    link = ep_res_groups[ep][res][0]
-                    ep_buttons.append(InlineKeyboardButton(f"{ep} {res}", url=link))
+            if len(ep_res_groups) > 1:
+                # Multiple episodes: Only show resolution batch buttons
+                batch_res_buttons = []
+                for res in sorted(res_groups.keys()):
+                    res_files = res_groups[res]
+                    msg_ids = [f['msg_id'] for f in res_files]
+                    first_id = min(msg_ids)
+                    last_id = max(msg_ids)
 
-                # Add episode buttons in rows
-                for i in range(0, len(ep_buttons), 3):
-                    buttons.append(ep_buttons[i:i+3])
+                    batch_string = f"get-{first_id * abs(client.db_channel.id)}-{last_id * abs(client.db_channel.id)}"
+                    batch_base64 = await encode(batch_string)
+                    batch_link = f"https://t.me/{client.username}?start={batch_base64}"
+                    batch_res_buttons.append(InlineKeyboardButton(f"⚡ {res} Batch", url=batch_link))
 
-            # Batch link logic (if multiple files exist)
+                for i in range(0, len(batch_res_buttons), 3):
+                    buttons.append(batch_res_buttons[i:i+3])
+            else:
+                # Single episode: show normal episode buttons
+                for ep in sorted(ep_res_groups.keys()):
+                    ep_buttons = []
+                    for res in sorted(ep_res_groups[ep].keys()):
+                        link = ep_res_groups[ep][res][0]
+                        ep_buttons.append(InlineKeyboardButton(f"{ep} {res}", url=link))
+                    for i in range(0, len(ep_buttons), 3):
+                        buttons.append(ep_buttons[i:i+3])
+
+            # Global Batch link
             if all_files:
                 msg_ids = [f['msg_id'] for f in all_files]
                 first_id = min(msg_ids)
@@ -163,7 +265,7 @@ async def post_command(client: Bot, message: Message):
 
             await client.send_photo(
                 chat_id=POST_CHANNEL_ID if POST_CHANNEL_ID else message.chat.id,
-                photo=poster_url,
+                photo=poster_url if poster_url else "https://telegra.ph/file/71c828230b533e4f620f3.jpg",
                 caption=caption,
                 reply_markup=InlineKeyboardMarkup(buttons)
             )
@@ -177,11 +279,24 @@ async def post_command(client: Bot, message: Message):
     else:
         # Movie: /post {movie_name} {poster_url}
         try:
-            if " " not in full_query:
-                return await message.reply_text("<b>Poster URL missing!</b>\nUse: /post {movie_name} {poster_url}")
+            if " " in full_query and (full_query.rsplit(None, 1)[1].startswith("http") or full_query.rsplit(None, 1)[1].startswith("https")):
+                movie_name, poster_url = full_query.rsplit(None, 1)
+            else:
+                movie_name = full_query
+                poster_url = None
 
-            movie_name, poster_url = full_query.rsplit(None, 1)
             search_msg = await message.reply_text(f"<b>Sᴇᴀʀᴄʜɪɴɢ ғᴏʀ {movie_name}...</b>")
+
+            # Use TMDB if poster not provided
+            if not poster_url or not poster_url.startswith("http"):
+                tmdb_details = await get_movie_details(movie_name, "movie")
+                if tmdb_details:
+                    poster_url = tmdb_details.get('backdrop_urls')[0] if tmdb_details.get('backdrop_urls') else None
+                    movie_description = tmdb_details.get('overview')
+
+            # Use OpenAI if description still empty
+            if not movie_description:
+                movie_description = await generate_ai_description(movie_name)
 
             files = await db.find_file(movie_name)
             if not files:
@@ -200,15 +315,21 @@ async def post_command(client: Bot, message: Message):
                 res_groups[res].append(link)
 
             # Caption and Buttons
-            qualities = " - ".join(sorted(list(set(extract_quality(f['file_name']) for f in files))))
+            qualities = " + ".join(sorted(list(set(extract_quality(f['file_name']) for f in files))))
             years = extract_year([f['file_name'] for f in files])
-            audios = extract_audio([f['file_name'] for f in files])
+            audios = extract_audio([f.get('caption') or f['file_name'] for f in files])
+            genres = extract_genres([f.get('caption') or f['file_name'] for f in files])
 
+            title = movie_name.upper()
+            header = f"<b>{title} ({years}) {qualities} {audios}</b>"
             caption = (
-                f"<b>📼 Movie: {movie_name}\n"
-                f"📅 Year: {years}\n"
-                f"🎥 Quality: {qualities}\n"
-                f"🔊 Audio: {audios}\n\n"
+                f"{header}\n\n"
+                f"<b>⭐ TITLE: {title}\n"
+                f"📺 YEAR: {years}\n"
+                f"🎥 QUALITY: {qualities}\n"
+                f"🎧 AUDIO: {audios}\n"
+                f"📁 GENRES: {genres}\n\n"
+                f"📝 DESCRIPTION: {movie_description}\n\n"
                 f"✨ Join Our Main Channel @Movies8777\n"
                 f"━━━━━━━━━━━━━━━━━━━━━━</b>"
             )
@@ -226,7 +347,7 @@ async def post_command(client: Bot, message: Message):
 
             await client.send_photo(
                 chat_id=POST_CHANNEL_ID if POST_CHANNEL_ID else message.chat.id,
-                photo=poster_url,
+                photo=poster_url if poster_url else "https://telegra.ph/file/71c828230b533e4f620f3.jpg",
                 caption=caption,
                 reply_markup=InlineKeyboardMarkup(buttons)
             )

@@ -166,20 +166,32 @@ async def get_message_id(client, message):
                 return message.forward_origin.message_id
         return 0
     elif message.text:
-        pattern = r"https://t.me/(?:c/)?(.*)/(\d+)"
-        matches = re.match(pattern,message.text)
+        # Handles:
+        # https://t.me/c/123456789/10
+        # https://t.me/username/10
+        # https://t.me/c/123456789/10?single
+        pattern = r"https://t.me/(?:c/)?([^/?\s]+)/(\d+)"
+        matches = re.search(pattern, message.text)
         if not matches:
             return 0
+
         channel_id = matches.group(1)
         msg_id = int(matches.group(2))
+
         if channel_id.isdigit():
-            if f"-100{channel_id}" == str(client.db_channel.id):
+            # Private channel ID in link is usually without -100 prefix
+            full_channel_id = f"-100{channel_id}"
+            if full_channel_id == str(client.db_channel.id):
                 return msg_id
         else:
             if channel_id == client.db_channel.username:
                 return msg_id
-    else:
-        return 0
+
+        # Also check if it's the exact database channel ID if it was provided directly
+        if str(channel_id) == str(client.db_channel.id).replace("-100", ""):
+            return msg_id
+
+    return 0
 
 
 def get_readable_time(seconds: int) -> str:

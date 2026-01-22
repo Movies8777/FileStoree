@@ -66,11 +66,38 @@ async def cb_handler(client: Bot, query: CallbackQuery):
             ]
         ]
         if await is_admin(query.from_user.id):
-            buttons.append([InlineKeyboardButton("ᴀᴅᴍɪɴ ᴄᴏᴍᴍᴀɴᴅs", callback_data="admin_cmds")])
+            buttons.append([
+                InlineKeyboardButton("ᴀᴅᴍɪɴ ᴄᴏᴍᴍᴀɴᴅs", callback_data="admin_cmds"),
+                InlineKeyboardButton("📊 sᴛᴀᴛs", callback_data="stats")
+            ])
 
         await query.message.edit_caption(
             caption=START_MSG.format(first=query.from_user.first_name),
             reply_markup=InlineKeyboardMarkup(buttons)
+        )
+
+    elif data == "stats":
+        if not await is_admin(query.from_user.id):
+            return await query.answer("You are not authorized!", show_alert=True)
+
+        total_users = await db.total_users_count()
+        total_files = await db.total_files()
+        total_verify = await db.get_total_verify_count()
+
+        stats_msg = (
+            "<b>📊 Bᴏᴛ Sᴛᴀᴛɪsᴛɪᴄs</b>\n\n"
+            f"<b>👤 Tᴏᴛᴀʟ Usᴇʀs:</b> <code>{total_users}</code>\n"
+            f"<b>📁 Tᴏᴛᴀʟ Fɪʟᴇs:</b> <code>{total_files}</code>\n"
+            f"<b>✅ Tᴏᴅᴀʏ Vᴇʀɪғɪᴇᴅ:</b> <code>{total_verify}</code>\n"
+            "━━━━━━━━━━━━━━━━━━━━━━"
+        )
+
+        await query.message.edit_caption(
+            caption=stats_msg,
+            reply_markup=InlineKeyboardMarkup([
+                [InlineKeyboardButton('‹ ʙᴀᴄᴋ', callback_data='start'),
+                 InlineKeyboardButton("ᴄʟᴏsᴇ", callback_data='close')]
+            ])
         )
 
 

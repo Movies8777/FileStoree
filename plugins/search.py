@@ -43,7 +43,8 @@ async def search_handler(client: Client, message: Message):
     # Add How To Download button
     buttons.append([InlineKeyboardButton("🍿 Hᴏᴡ Tᴏ Dᴏᴡɴʟᴏᴀᴅ 🍿", url=TUT_VID)])
 
-    text = f"<b>🔎 Sᴇᴀʀᴄʜ Rᴇsᴜʟᴛs Fᴏʀ '{query}'</b>\n"
+    text = f"<b>🔎 Sᴇᴀʀᴄʜ Rᴇsᴜʟᴛs Fᴏʀ: <code>{query}</code></b>\n\n"
+    text += f"⭐ TITLE: <code>{query.upper()}</code>\n"
     text += f"━━━━━━━━━━━━━━━━━━━━━━\n"
     if len(files) > 10:
         text += f"<i>Sʜᴏᴡɪɴɢ ᴛᴏᴘ 10 ʀᴇsᴜʟᴛs ᴏᴜᴛ ᴏғ {len(files)}:</i>"

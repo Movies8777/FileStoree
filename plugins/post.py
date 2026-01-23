@@ -3,7 +3,7 @@ import asyncio
 from pyrogram import Client, filters
 from pyrogram.types import Message, InlineKeyboardMarkup, InlineKeyboardButton
 from bot import Bot
-from config import LOGGER, POST_CHANNEL_ID, TUT_VID
+from config import LOGGER, POST_CHANNEL_ID, ANIME_CHANNEL_ID, TUT_VID
 from helper_func import admin, encode, clean_title
 from database.database import db
 
@@ -103,15 +103,11 @@ def extract_audio(file_names):
 
     return " - ".join(res)
 
-@Bot.on_message(filters.command("post") & admin)
-async def post_command(client: Bot, message: Message):
-    # Usage check
-    # Movie: /post {movie_name} {poster_url}
-    # Series: /post {series_name} S01 E01 to E08 {poster_url}
-
+async def process_post(client: Bot, message: Message, target_chat_id: int):
     cmd_text = message.text.split(None, 1)
     if len(cmd_text) < 2:
-        return await message.reply_text("<b>Usage:</b>\n\n<b>Movie:</b> /post {movie_name} {poster_url}\n<b>Series:</b> /post {series_name} S01 E01 to E08 {poster_url}")
+        cmd_name = message.command[0]
+        return await message.reply_text(f"<b>Usage:</b>\n\n<b>Movie:</b> /{cmd_name} {{movie_name}} {{poster_url}}\n<b>Series:</b> /{cmd_name} {{series_name}} S01 E01 to E08 {{poster_url}}")
 
     full_query = cmd_text[1]
 
@@ -232,7 +228,7 @@ async def post_command(client: Bot, message: Message):
             buttons.append([InlineKeyboardButton("Hᴏᴡ Tᴏ Dᴏᴡɴʟᴏᴀᴅ", url=TUT_VID)])
 
             await client.send_photo(
-                chat_id=POST_CHANNEL_ID if POST_CHANNEL_ID else message.chat.id,
+                chat_id=target_chat_id if target_chat_id else message.chat.id,
                 photo=poster_url,
                 caption=caption,
                 reply_markup=InlineKeyboardMarkup(buttons)
@@ -342,7 +338,7 @@ async def post_command(client: Bot, message: Message):
                 buttons.append([InlineKeyboardButton("Hᴏᴡ Tᴏ Dᴏᴡɴʟᴏᴀᴅ", url=TUT_VID)])
 
                 await client.send_photo(
-                    chat_id=POST_CHANNEL_ID if POST_CHANNEL_ID else message.chat.id,
+                    chat_id=target_chat_id if target_chat_id else message.chat.id,
                     photo=poster_url,
                     caption=caption,
                     reply_markup=InlineKeyboardMarkup(buttons)
@@ -415,7 +411,7 @@ async def post_command(client: Bot, message: Message):
                 buttons.append([InlineKeyboardButton("Hᴏᴡ Tᴏ Dᴏᴡɴʟᴏᴀᴅ", url=TUT_VID)])
 
                 await client.send_photo(
-                    chat_id=POST_CHANNEL_ID if POST_CHANNEL_ID else message.chat.id,
+                    chat_id=target_chat_id if target_chat_id else message.chat.id,
                     photo=poster_url,
                     caption=caption,
                     reply_markup=InlineKeyboardMarkup(buttons)
@@ -425,3 +421,11 @@ async def post_command(client: Bot, message: Message):
             except Exception as e:
                 logger.error(f"Error in movie post: {e}")
                 return await message.reply_text(f"<b>Error:</b> {e}")
+
+@Bot.on_message(filters.command("post") & admin)
+async def post_command(client: Bot, message: Message):
+    await process_post(client, message, POST_CHANNEL_ID)
+
+@Bot.on_message(filters.command("animepost") & admin)
+async def anime_post_command(client: Bot, message: Message):
+    await process_post(client, message, ANIME_CHANNEL_ID)

@@ -58,37 +58,40 @@ ABOUT_TXT = "<b><blockquote>◈ ᴄʀᴇᴀᴛᴏʀ: <a href=https://t.me/Spicyl
 START_MSG = os.environ.get("START_MESSAGE", "<b>ʜᴇʟʟᴏ {first}\n\n<blockquote> ɪ ᴀᴍ ғɪʟᴇ sᴛᴏʀᴇ ʙᴏᴛ, ɪ ᴄᴀɴ sᴛᴏʀᴇ ᴘʀɪᴠᴀᴛᴇ ғɪʟᴇs ɪɴ sᴘᴇᴄɪғɪᴇᴅ ᴄʜᴀɴɴᴇʟ ᴀɴᴅ ᴏᴛʜᴇʀ ᴜsᴇʀs ᴄᴀɴ ᴀᴄᴄᴇss ɪᴛ ғʀᴏᴍ sᴘᴇᴄɪᴀʟ ʟɪɴᴋ.</blockquote></b>")
 FORCE_MSG = os.environ.get("FORCE_SUB_MESSAGE", "ʜᴇʟʟᴏ {first}\n\n<b><blockquote>ᴊᴏɪɴ ᴏᴜʀ ᴄʜᴀɴɴᴇʟs ᴀɴᴅ ᴛʜᴇɴ ᴄʟɪᴄᴋ ᴏɴ ʀᴇʟᴏᴀᴅ button ᴛᴏ ɢᴇᴛ ʏᴏᴜʀ ʀᴇǫᴜᴇꜱᴛᴇᴅ ꜰɪʟᴇ.</b></blockquote>")
 
-CMD_TXT = """<blockquote><b>» ᴀᴅᴍɪɴ ᴄᴏᴍᴍᴀɴᴅs:</b></blockquote>
+CMD_TXT_1 = """<blockquote><b>» ʙᴏᴛ ᴍᴀɴᴀɢᴇᴍᴇɴᴛ:</b></blockquote>
 
-<b>›› /genlink (reply) :</b> ɢᴇɴᴇʀᴀᴛᴇ ʟɪɴᴋ ʙʏ ʀᴇᴘʟʏɪɴɢ ᴛᴏ ᴍᴇssᴀɢᴇ
-<b>›› /batch :</b> ɢᴇɴᴇʀᴀᴛᴇ ʙᴀᴛᴄʜ ʟɪɴᴋs
-<b>›› /dlt_time :</b> sᴇᴛ ᴀᴜᴛᴏ ᴅᴇʟᴇᴛᴇ ᴛɪᴍᴇ
-<b>›› /check_dlt_time :</b> ᴄʜᴇᴄᴋ ᴄᴜʀʀᴇɴᴛ ᴅᴇʟᴇᴛᴇ ᴛɪᴍᴇ
-<b>›› /dbroadcast :</b> ʙʀᴏᴀᴅᴄᴀsᴛ ᴅᴏᴄᴜᴍᴇɴᴛ / ᴠɪᴅᴇᴏ
-<b>›› /ban :</b> ʙᴀɴ ᴀ ᴜꜱᴇʀ
-<b>›› /unban :</b> ᴜɴʙᴀɴ ᴀ ᴜꜱᴇʀ
-<b>›› /banlist :</b> ɢᴇᴛ ʟɪsᴛ ᴏꜰ ʙᴀɴɴᴇᴅ ᴜꜱᴇʀs
-<b>›› /addchnl :</b> ᴀᴅᴅ ꜰᴏʀᴄᴇ sᴜʙ ᴄʜᴀɴɴᴇʟ
-<b>›› /delchnl :</b> ʀᴇᴍᴏᴠᴇ ꜰᴏʀᴄᴇ sᴜʙ ᴄʜᴀɴɴᴇʟ
-<b>›› /listchnl :</b> ᴠɪᴇᴡ ᴀᴅᴅᴇᴅ ᴄʜᴀɴɴᴇʟs
-<b>›› /fsub_mode :</b> ᴛᴏɢɢʟᴇ ꜰᴏʀᴄᴇ sᴜʙ ᴍᴏᴅᴇ
-<b>›› /pbroadcast :</b> sᴇɴᴅ ᴘʜᴏᴛᴏ ᴛᴏ ᴀʟʟ ᴜꜱᴇʀs
-<b>›› /add_admin :</b> ᴀᴅᴅ ᴀɴ ᴀᴅᴍɪɴ
-<b>›› /deladmin :</b> ʀᴇᴍᴏᴠᴇ ᴀɴ ᴀᴅᴍɪɴ
-<b>›› /admins :</b> ɢᴇᴛ ʟɪsᴛ ᴏꜰ ᴀᴅᴍɪɴs
-<b>›› /index :</b> ʙᴜʟᴋ ɪɴᴅᴇx ᴄʜᴀɴɴᴇʟ ᴘᴏsᴛs
-<b>›› /addpremium :</b> ᴀᴅᴅ ᴀ ᴘʀᴇᴍɪᴜᴍ ᴜꜱᴇʀ
-<b>›› /premium_users :</b> ʟɪsᴛ ᴀʟʟ ᴘʀᴇᴍɪᴜᴍ ᴜꜱᴇʀs
-<b>›› /remove_premium :</b> ʀᴇᴍᴏᴠᴇ ᴘʀᴇᴍɪᴜᴍ ꜰʀᴏᴍ ᴀ ᴜꜱᴇʀ
-<b>›› /myplan :</b> ᴄʜᴇᴄᴋ ʏᴏᴜʀ ᴘʀᴇᴍɪᴜᴍ sᴛᴀᴛᴜs
-<b>›› /stats :</b> ᴄʜᴇᴄᴋ ʙᴏᴛ ᴀɴᴅ ɪɴᴅᴇx sᴛᴀᴛs
-<b>›› /count :</b> ᴄᴏᴜɴᴛ ᴠᴇʀɪғɪᴄᴀᴛɪᴏɴs
-<b>›› /delreq :</b> Rᴇᴍᴏᴠᴇᴅ ʟᴇғᴛᴏᴠᴇʀ ɴᴏɴ-ʀᴇǫᴜᴇsᴛ ᴜsᴇʀs
-<b>›› /add_ongoing :</b> ᴀᴅᴅ ᴀɴ ᴏɴɢᴏɪɴɢ sᴇʀɪᴇs
-<b>›› /ongoing :</b> ᴍᴀɴᴀɢᴇ ᴏɴɢᴏɪɴɢ sᴇʀɪᴇs
-<b>›› /del_ongoing :</b> ʀᴇᴍᴏᴠᴇ ᴀɴ ᴏɴɢᴏɪɴɢ sᴇʀɪᴇs
-<b>›› /post :</b> ɢᴇɴᴇʀᴀᴛᴇ ғᴏʀᴍᴀᴛᴛᴇᴅ ᴍᴏᴠɪᴇ/sᴇʀɪᴇs ᴘᴏsᴛ
-<b>›› /file_details :</b> ᴄʜᴇᴄᴋ ᴅᴇᴛᴀɪʟs ᴏғ ᴀ ғɪʟᴇ ɪɴ ᴅʙ
+<b>› /stats :</b> sᴛᴀᴛs ᴀɴᴅ ɪɴᴅᴇx ɪɴғᴏ
+<b>› /dbroadcast :</b> sᴇɴᴅ ᴍᴇssᴀɢᴇ ᴛᴏ ᴀʟʟ
+<b>› /pbroadcast :</b> sᴇɴᴅ ᴘʜᴏᴛᴏ ᴛᴏ ᴀʟʟ
+<b>› /ban :</b> ʙᴀɴ ᴀ ᴜsᴇʀ
+<b>› /unban :</b> ᴜɴʙᴀɴ ᴀ ᴜsᴇʀ
+<b>› /banlist :</b> ʟɪsᴛ ᴏғ ʙᴀɴɴᴇᴅ ᴜsᴇʀs
+<b>› /addchnl :</b> ᴀᴅᴅ ғsᴜʙ ᴄʜᴀɴɴᴇʟ
+<b>› /delchnl :</b> ʀᴇᴍᴏᴠᴇ ғsᴜʙ ᴄʜᴀɴɴᴇʟ
+<b>› /listchnl :</b> ᴠɪᴇᴡ ғsᴜʙ ᴄʜᴀɴɴᴇʟs
+<b>› /fsub_mode :</b> ᴛᴏɢɢʟᴇ ғsᴜʙ ᴍᴏᴅᴇ
+<b>› /add_admin :</b> ᴀᴅᴅ ᴀ ɴᴇᴡ ᴀᴅᴍɪɴ
+<b>› /deladmin :</b> ʀᴇᴍᴏᴠᴇ ᴀɴ ᴀᴅᴍɪɴ
+<b>› /admins :</b> ʟɪsᴛ ᴏғ ᴀʟʟ ᴀᴅᴍɪɴs
+<b>› /addpremium :</b> ᴀᴅᴅ ᴘʀᴇᴍɪᴜᴍ ᴜsᴇʀ
+<b>› /premium_users :</b> ʟɪsᴛ ᴏғ ᴘʀᴇᴍɪᴜᴍs
+<b>› /remove_premium :</b> ʀᴇᴍᴏᴠᴇ ᴘʀᴇᴍɪᴜᴍ
+<b>› /count :</b> ᴠᴇʀɪғɪᴄᴀᴛɪᴏɴ ᴄᴏᴜɴᴛ
+<b>› /delreq :</b> ᴄʟᴇᴀɴ ᴜɴ-ʀᴇǫ ᴜsᴇʀs
+"""
+
+CMD_TXT_2 = """<blockquote><b>» ᴄᴏɴᴛᴇɴᴛ ᴍᴀɴᴀɢᴇᴍᴇɴᴛ:</b></blockquote>
+
+<b>› /index :</b> ʙᴜʟᴋ ɪɴᴅᴇx ᴄʜᴀɴɴᴇʟ
+<b>› /genlink :</b> ʀᴇᴘʟʏ ᴛᴏ ɢᴇɴ ʟɪɴᴋ
+<b>› /batch :</b> ɢᴇɴᴇʀᴀᴛᴇ ʙᴀᴛᴄʜ ʟɪɴᴋ
+<b>› /dlt_time :</b> sᴇᴛ ᴀᴜᴛᴏ-ᴅᴇʟᴇᴛᴇ ᴛɪᴍᴇ
+<b>› /check_dlt_time :</b> ᴄʜᴇᴄᴋ ᴅᴇʟᴇᴛᴇ ᴛɪᴍᴇ
+<b>› /add_ongoing :</b> ᴀᴅᴅ ᴏɴɢᴏɪɴɢ sᴇʀɪᴇs
+<b>› /ongoing :</b> ᴍᴀɴᴀɢᴇ ᴏɴɢᴏɪɴɢ
+<b>› /del_ongoing :</b> ʀᴇᴍᴏᴠᴇ ᴏɴɢᴏɪɴɢ
+<b>› /post :</b> ғᴏʀᴍᴀᴛᴛᴇᴅ ᴍᴏᴠɪᴇ/sᴇʀɪᴇs
+<b>› /file_details :</b> ᴄʜᴇᴄᴋ ғɪʟᴇ ɪɴ ᴅʙ
 """
 #--------------------------------------------
 CUSTOM_CAPTION = os.environ.get("CUSTOM_CAPTION", "<b>• ʙʏ @Spicylinebun</b>") #set your Custom Caption here, Keep None for Disable Custom Caption

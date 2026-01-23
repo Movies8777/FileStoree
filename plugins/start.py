@@ -239,7 +239,7 @@ async def start_command(client: Client, message: Message):
 
         if await is_admin(message.from_user.id):
             buttons.append([
-                InlineKeyboardButton("ᴀᴅᴍɪɴ ᴄᴏᴍᴍᴀɴᴅs", callback_data="admin_cmds"),
+                InlineKeyboardButton("ᴀᴅᴍɪɴ ᴄᴏᴍᴍᴀɴᴅs", callback_data="admin_cmds_1"),
                 InlineKeyboardButton("📊 sᴛᴀᴛs", callback_data="stats")
             ])
 

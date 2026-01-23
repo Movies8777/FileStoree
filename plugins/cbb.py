@@ -30,16 +30,29 @@ def safe_edit(msg, *args, **kwargs):
 async def cb_handler(client: Bot, query: CallbackQuery):
     data = query.data
 
-    if data == "admin_cmds":
+    if data.startswith("admin_cmds"):
         if not await is_admin(query.from_user.id):
             return await query.answer("You are not authorized to view this!", show_alert=True)
-        await query.message.edit_caption(
-            caption=CMD_TXT,
-            reply_markup=InlineKeyboardMarkup([
-                [InlineKeyboardButton('‹ ʙᴀᴄᴋ', callback_data='start'),
-                 InlineKeyboardButton("ᴄʟᴏꜱᴇ", callback_data='close')]
-            ])
-        )
+
+        page = data.split("_")[-1] if "_" in data else "1"
+        caption = CMD_TXT_1 if page == "1" else CMD_TXT_2
+
+        buttons = []
+        if page == "1":
+            buttons.append([InlineKeyboardButton("ɴᴇxᴛ ᴘᴀɢᴇ 〉", callback_data="admin_cmds_2")])
+        else:
+            buttons.append([InlineKeyboardButton("〈 ʙᴀᴄᴋ ᴘᴀɢᴇ", callback_data="admin_cmds_1")])
+
+        buttons.append([InlineKeyboardButton('‹ ʙᴀᴄᴋ', callback_data='start'),
+                        InlineKeyboardButton("ᴄʟᴏꜱᴇ", callback_data='close')])
+
+        try:
+            await query.message.edit_caption(
+                caption=caption,
+                reply_markup=InlineKeyboardMarkup(buttons)
+            )
+        except Exception as e:
+            await query.answer(f"Error: {e}", show_alert=True)
 
     elif data == "help":
         await query.message.edit_caption(
@@ -68,20 +81,28 @@ async def cb_handler(client: Bot, query: CallbackQuery):
         ]
         if await is_admin(query.from_user.id):
             buttons.append([
-                InlineKeyboardButton("ᴀᴅᴍɪɴ ᴄᴏᴍᴍᴀɴᴅs", callback_data="admin_cmds"),
+                InlineKeyboardButton("ᴀᴅᴍɪɴ ᴄᴏᴍᴍᴀɴᴅs", callback_data="admin_cmds_1"),
                 InlineKeyboardButton("📊 sᴛᴀᴛs", callback_data="stats")
             ])
 
-        await query.message.edit_caption(
-            caption=START_MSG.format(
-                first=query.from_user.first_name,
-                last=query.from_user.last_name,
-                username=None if not query.from_user.username else '@' + query.from_user.username,
-                mention=query.from_user.mention,
-                id=query.from_user.id
-            ),
-            reply_markup=InlineKeyboardMarkup(buttons)
+        caption = START_MSG.format(
+            first=query.from_user.first_name,
+            last=query.from_user.last_name,
+            username=None if not query.from_user.username else '@' + query.from_user.username,
+            mention=query.from_user.mention,
+            id=query.from_user.id
         )
+        reply_markup = InlineKeyboardMarkup(buttons)
+
+        if query.message.photo or query.message.video:
+            try:
+                await query.message.edit_caption(caption=caption, reply_markup=reply_markup)
+            except:
+                await query.message.delete()
+                await client.send_photo(chat_id=query.message.chat.id, photo=START_PIC, caption=caption, reply_markup=reply_markup)
+        else:
+            await query.message.delete()
+            await client.send_photo(chat_id=query.message.chat.id, photo=START_PIC, caption=caption, reply_markup=reply_markup)
 
     elif data == "stats":
         if not await is_admin(query.from_user.id):

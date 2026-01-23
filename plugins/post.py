@@ -165,7 +165,7 @@ async def post_command(client: Bot, message: Message):
                 string = f"get-{file['msg_id'] * abs(client.db_channel.id)}"
                 base64_string = await encode(string)
                 link = f"https://t.me/{client.username}?start={base64_string}"
-                ep_res_groups[ep_val][res].append(link)
+                ep_res_groups[ep_val][label].append(link)
 
             # Metadata extraction
             all_metadata_sources = [f.get('caption') or f['file_name'] for f in all_files]
@@ -287,7 +287,7 @@ async def post_command(client: Bot, message: Message):
                     string = f"get-{file['msg_id'] * abs(client.db_channel.id)}"
                     base64_string = await encode(string)
                     link = f"https://t.me/{client.username}?start={base64_string}"
-                    ep_res_groups[tag_val][res].append(link)
+                    ep_res_groups[tag_val][label].append(link)
 
                 all_metadata_sources = [f.get('caption') or f['file_name'] for f in all_files]
                 qualities = extract_quality(all_metadata_sources)
@@ -367,7 +367,7 @@ async def post_command(client: Bot, message: Message):
                     string = f"get-{file['msg_id'] * abs(client.db_channel.id)}"
                     base64_string = await encode(string)
                     link = f"https://t.me/{client.username}?start={base64_string}"
-                    res_groups[res].append(link)
+                    res_groups[label].append(link)
 
                 all_metadata_sources = [f.get('caption') or f['file_name'] for f in files]
                 qualities = extract_quality(all_metadata_sources)

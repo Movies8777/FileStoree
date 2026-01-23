@@ -218,6 +218,19 @@ async def cb_handler(client: Bot, query: CallbackQuery):
         except:
             pass
 
+    elif data == "confirm_del_all":
+        if not await is_admin(query.from_user.id):
+            return await query.answer("You are not authorized!", show_alert=True)
+        await db.delete_all_files()
+        await query.message.edit_text("<b>✅ All indexed files have been deleted successfully!</b>")
+
+    elif data.startswith("confirm_del_spec_"):
+        if not await is_admin(query.from_user.id):
+            return await query.answer("You are not authorized!", show_alert=True)
+        search_query = data.replace("confirm_del_spec_", "")
+        res = await db.delete_specific_files(search_query)
+        await query.message.edit_text(f"<b>✅ {res.deleted_count} files matching '{search_query}' have been deleted!</b>")
+
     elif data.startswith("rfs_ch_"):
         cid = int(data.split("_")[2])
         try:
@@ -423,7 +436,7 @@ async def cb_handler(client: Bot, query: CallbackQuery):
 
         buttons.append([InlineKeyboardButton(" [ ʜᴏᴡ ᴛᴏ ᴅᴏᴡɴʟᴏᴀᴅ ] ", url=TUT_VID)])
 
-        target_chat = -1002096101886 # The ongoing channel
+        target_chat = ONGOING_CHANNEL_ID # The ongoing channel
         try:
             await client.send_photo(
                 chat_id=target_chat,

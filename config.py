@@ -29,6 +29,7 @@ CHANNEL_ID = int(os.environ.get("CHANNEL_ID", "-1003646933017")) #Your db channe
 POST_CHANNEL_ID = int(os.environ.get("POST_CHANNEL_ID", "-1003524332911"))
 OWNER = os.environ.get("OWNER", "♚𝖧υηтєʀ⚰️") # Owner username without @
 OWNER_ID = int(os.environ.get("OWNER_ID", "8435672368")) # Owner id
+ONGOING_CHANNEL_ID = int(os.environ.get("ONGOING_CHANNEL_ID", "-1002096101886"))
 #--------------------------------------------
 PORT = os.environ.get("PORT", "8001")
 #--------------------------------------------
@@ -92,6 +93,7 @@ CMD_TXT_2 = """<blockquote><b>» ᴄᴏɴᴛᴇɴᴛ ᴍᴀɴᴀɢᴇᴍᴇɴᴛ
 <b>› /del_ongoing :</b> ʀᴇᴍᴏᴠᴇ ᴏɴɢᴏɪɴɢ
 <b>› /post :</b> ғᴏʀᴍᴀᴛᴛᴇᴅ ᴍᴏᴠɪᴇ/sᴇʀɪᴇs
 <b>› /file_details :</b> ᴄʜᴇᴄᴋ ғɪʟᴇ ɪɴ ᴅʙ
+<b>› /del_index :</b> ᴅᴇʟᴇᴛᴇ ɪɴᴅᴇxᴇᴅ ғɪʟᴇs
 """
 #--------------------------------------------
 CUSTOM_CAPTION = os.environ.get("CUSTOM_CAPTION", "<b>• ʙʏ @Spicylinebun</b>") #set your Custom Caption here, Keep None for Disable Custom Caption

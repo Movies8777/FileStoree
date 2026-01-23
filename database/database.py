@@ -305,6 +305,21 @@ class Rohit:
     async def total_files(self):
         return await self.file_data.count_documents({})
 
+    async def delete_all_files(self):
+        return await self.file_data.delete_many({})
+
+    async def delete_specific_files(self, query):
+        import re
+        query_words = query.split()
+        regex_pattern = "".join([f"(?=.*{re.escape(word)})" for word in query_words])
+
+        return await self.file_data.delete_many({
+            '$or': [
+                {'file_name': {'$regex': regex_pattern, '$options': 'i'}},
+                {'caption': {'$regex': regex_pattern, '$options': 'i'}}
+            ]
+        })
+
     # ONGOING SERIES DATA
     async def add_ongoing(self, title, season, language, release_day, total_eps, current_ep, poster, qualities):
         data = {

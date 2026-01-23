@@ -116,10 +116,10 @@ async def cb_handler(client: Bot, query: CallbackQuery):
         stats_msg = (
             "<b><blockquote>📊 Bᴏᴛ Sᴛᴀᴛɪsᴛɪᴄs\n"
             "━━━━━━━━━━━━━━━━━━━━━━\n"
-            f"📂 Tᴏᴛᴀʟ Fɪʟᴇs : {total_files}\n"
-            f"👤 Tᴏᴛᴀʟ Usᴇʀs : {total_users}\n"
-            f"✅ Tᴏᴅᴀʏ Vᴇʀɪғɪᴇᴅ : {total_verify}\n"
-            f"📺 Oɴɢᴏɪɴɢ Sᴇʀɪᴇs : {total_ongoing}\n"
+            f"📁 Tᴏᴛᴀʟ Fɪʟᴇs : {total_files}\n"
+            f"👥 Tᴏᴛᴀʟ Usᴇʀs : {total_users}\n"
+            f"🛡️ Tᴏᴅᴀʏ Vᴇʀɪғɪᴇᴅ : {total_verify}\n"
+            f"🎬 Oɴɢᴏɪɴɢ Sᴇʀɪᴇs : {total_ongoing}\n"
             "━━━━━━━━━━━━━━━━━━━━━━</blockquote></b>"
         )
 

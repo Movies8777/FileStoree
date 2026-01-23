@@ -5,7 +5,7 @@ from pyrogram import Client, filters
 from pyrogram.types import Message, InlineKeyboardMarkup, InlineKeyboardButton, CallbackQuery
 from bot import Bot
 from config import LOGGER, POST_CHANNEL_ID, ANIME_CHANNEL_ID, TUT_VID
-from helper_func import admin, encode, clean_title
+from helper_func import admin, encode, clean_title, get_metadata
 from database.database import db
 
 logger = LOGGER(__name__)
@@ -221,17 +221,18 @@ async def process_post(client: Bot, message: Message, target_chat_id: int):
             years = extract_year(all_metadata_sources)
             audios = extract_audio(all_metadata_sources)
 
+            rating, genre = get_metadata(clean_title(series_name))
+
             is_multi = any(re.search(r'multi|dual', src, re.IGNORECASE) for src in all_metadata_sources)
 
             # Caption Construction
-            missing_txt = f"⚠️ Missing: {', '.join([f'E{i:02d}' for i in missing_eps])}\n" if missing_eps else ""
+            missing_txt = f"<b><blockquote>⚠️ Mɪssɪɴɢ : {', '.join([f'E{i:02d}' for i in missing_eps])}</blockquote></b>\n" if missing_eps else ""
             caption_parts = {
-                'title': f"<b>📼 Series: {clean_title(series_name)} {season_tag}\n",
-                'episode': f"🔢 Episode: {start_ep_tag} to {end_ep_tag}\n",
+                'title': f"<b><blockquote>✨ {clean_title(series_name)} {season_tag}</blockquote>\n",
+                'metadata': f"<b><blockquote>🎭 Gᴇɴʀᴇ : {genre or 'N/A'}\n🌟 Rᴀᴛɪɴɢ : {rating or 'N/A'}\n📅 Yᴇᴀʀ : {years or 'N/A'}</blockquote>\n",
+                'episode': f"<b><blockquote>🔢 Eᴘɪsᴏᴅᴇ : {start_ep_tag} ᴛᴏ {end_ep_tag}\n🎥 Qᴜᴀʟɪᴛʏ : {qualities or 'N/A'}</blockquote>\n",
                 'missing': missing_txt,
-                'year': f"📅 Year: {years}\n" if years else "",
-                'quality': f"🎥 Quality: {qualities}\n" if qualities else "",
-                'audio_label': "🔊 Audio: "
+                'audio_label': "🔊 Aᴜᴅɪᴏ : "
             }
 
             buttons = []
@@ -284,10 +285,9 @@ async def process_post(client: Bot, message: Message, target_chat_id: int):
                 )
 
             # Normal Posting
-            caption = caption_parts['title'] + caption_parts['episode'] + caption_parts['missing'] + caption_parts['year'] + caption_parts['quality']
+            caption = caption_parts['title'] + caption_parts['metadata'] + caption_parts['episode'] + caption_parts['missing']
             if audios:
-                caption += caption_parts['audio_label'] + audios + "\n"
-            caption += "</b>"
+                caption += f"<b><blockquote>{caption_parts['audio_label']}{audios}</blockquote></b>"
 
             await client.send_photo(
                 chat_id=target_chat_id if target_chat_id else message.chat.id,
@@ -371,16 +371,18 @@ async def process_post(client: Bot, message: Message, target_chat_id: int):
                 years = extract_year(all_metadata_sources)
                 audios = extract_audio(all_metadata_sources)
 
+                rating, genre = get_metadata(clean_title(series_name))
+
                 is_multi = any(re.search(r'multi|dual', src, re.IGNORECASE) for src in all_metadata_sources)
 
                 season_info = f"{start_str} - {end_str}" if start_str != end_str else start_str
-                missing_txt = f"⚠️ Missing: {', '.join([f'S{i:02d}' for i in missing_seasons])}\n" if missing_seasons else ""
+                missing_txt = f"<b><blockquote>⚠️ Mɪssɪɴɢ : {', '.join([f'S{i:02d}' for i in missing_seasons])}</blockquote></b>\n" if missing_seasons else ""
                 caption_parts = {
-                    'title': f"<b>📼 Series: {clean_title(series_name)} {season_info}\n",
+                    'title': f"<b><blockquote>✨ {clean_title(series_name)} {season_info}</blockquote>\n",
+                    'metadata': f"<b><blockquote>🎭 Gᴇɴʀᴇ : {genre or 'N/A'}\n🌟 Rᴀᴛɪɴɢ : {rating or 'N/A'}\n📅 Yᴇᴀʀ : {years or 'N/A'}</blockquote>\n",
+                    'episode': f"<b><blockquote>🎥 Qᴜᴀʟɪᴛʏ : {qualities or 'N/A'}</blockquote>\n",
                     'missing': missing_txt,
-                    'year': f"📅 Year: {years}\n" if years else "",
-                    'quality': f"🎥 Quality: {qualities}\n" if qualities else "",
-                    'audio_label': "🔊 Audio: "
+                    'audio_label': "🔊 Aᴜᴅɪᴏ : "
                 }
 
                 buttons = []
@@ -421,10 +423,9 @@ async def process_post(client: Bot, message: Message, target_chat_id: int):
                         reply_markup=get_audio_selection_markup(post_id, [])
                     )
 
-                caption = caption_parts['title'] + caption_parts['missing'] + caption_parts['year'] + caption_parts['quality']
+                caption = caption_parts['title'] + caption_parts['metadata'] + caption_parts['episode'] + caption_parts['missing']
                 if audios:
-                    caption += caption_parts['audio_label'] + audios + "\n"
-                caption += "</b>"
+                    caption += f"<b><blockquote>{caption_parts['audio_label']}{audios}</blockquote></b>"
 
                 await client.send_photo(
                     chat_id=target_chat_id if target_chat_id else message.chat.id,
@@ -475,13 +476,15 @@ async def process_post(client: Bot, message: Message, target_chat_id: int):
                 years = extract_year(all_metadata_sources)
                 audios = extract_audio(all_metadata_sources)
 
+                rating, genre = get_metadata(clean_title(movie_name))
+
                 is_multi = any(re.search(r'multi|dual', src, re.IGNORECASE) for src in all_metadata_sources)
 
                 caption_parts = {
-                    'title': f"<b>📼 Movie: {clean_title(movie_name)}\n",
-                    'year': f"📅 Year: {years}\n" if years else "",
-                    'quality': f"🎥 Quality: {qualities}\n" if qualities else "",
-                    'audio_label': "🔊 Audio: "
+                    'title': f"<b><blockquote>🎬 {clean_title(movie_name)}</blockquote>\n",
+                    'metadata': f"<b><blockquote>🎭 Gᴇɴʀᴇ : {genre or 'N/A'}\n🌟 Rᴀᴛɪɴɢ : {rating or 'N/A'}\n📅 Yᴇᴀʀ : {years or 'N/A'}</blockquote>\n",
+                    'episode': f"<b><blockquote>🎥 Qᴜᴀʟɪᴛʏ : {qualities or 'N/A'}</blockquote>\n",
+                    'audio_label': "🔊 Aᴜᴅɪᴏ : "
                 }
 
                 buttons = []
@@ -514,10 +517,9 @@ async def process_post(client: Bot, message: Message, target_chat_id: int):
                         reply_markup=get_audio_selection_markup(post_id, [])
                     )
 
-                caption = caption_parts['title'] + caption_parts['year'] + caption_parts['quality']
+                caption = caption_parts['title'] + caption_parts['metadata'] + caption_parts['episode']
                 if audios:
-                    caption += caption_parts['audio_label'] + audios + "\n"
-                caption += "</b>"
+                    caption += f"<b><blockquote>{caption_parts['audio_label']}{audios}</blockquote></b>"
 
                 await client.send_photo(
                     chat_id=target_chat_id if target_chat_id else message.chat.id,
@@ -580,14 +582,14 @@ async def anime_done_callback(client: Bot, query: CallbackQuery):
     audios = " - ".join(sorted_langs)
 
     caption = caption_parts['title']
+    if 'metadata' in caption_parts:
+        caption += caption_parts['metadata']
     if 'episode' in caption_parts:
         caption += caption_parts['episode']
     if 'missing' in caption_parts:
         caption += caption_parts['missing']
-    caption += caption_parts['year'] + caption_parts['quality']
     if audios:
-        caption += caption_parts['audio_label'] + audios + "\n"
-    caption += "</b>"
+        caption += f"<b><blockquote>{caption_parts['audio_label']}{audios}</blockquote></b>"
 
     await client.send_photo(
         chat_id=target_chat_id,

@@ -5,6 +5,8 @@ import base64
 import re
 import asyncio
 import time
+import requests
+from bs4 import BeautifulSoup
 from pyrogram import filters
 from pyrogram.enums import ChatMemberStatus, MessageOriginType
 from config import *
@@ -264,7 +266,7 @@ def clean_title(title):
         r'\d{3,4}p', r'\d[kK]', r'x26[45]', r'HEVC', r'10bit', r'HDR(?:ip)?',
         r'Bluray', r'Blu-ray', r'WEB-DL', r'Webrip', r'WEBDL', r'DVDRip', r'BDRip', r'BRRip',
         r'Dual Audio', r'Multi-Audio', r'Multi', r'Hindi', r'English', r'ESub', r'MSub',
-        r'HDCAM', r'S-Print', r'Pre-DVDRip', r'TS', r'HC', r'WEB', r'HDTV'
+        r'HDCAM', r'S-Print', r'Pre-DVDRip', r'TS', r'HC', r'WEB', r'HDTV', r'60fps'
     ]
     for tag in tags:
         title = re.sub(tag, '', title, flags=re.IGNORECASE)
@@ -287,6 +289,38 @@ def clean_title(title):
     title = re.sub(r'\s+', ' ', title).strip()
 
     return title
+
+def get_metadata(title):
+    try:
+        search_url = f"https://www.imdb.com/find?q={title.replace(' ', '+')}"
+        headers = {'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36'}
+        response = requests.get(search_url, headers=headers)
+        soup = BeautifulSoup(response.content, 'html.parser')
+
+        # Get the first result link
+        result = soup.find('a', class_='ipc-metadata-list-summary-item__t')
+        if not result:
+            return None, None
+
+        movie_url = f"https://www.imdb.com{result['href']}"
+        movie_response = requests.get(movie_url, headers=headers)
+        movie_soup = BeautifulSoup(movie_response.content, 'html.parser')
+
+        # Extract Rating
+        rating_tag = movie_soup.find('span', class_='sc-eb347148-1')
+        rating = rating_tag.text if rating_tag else "N/A"
+
+        # Extract Genres
+        genre_tags = movie_soup.find_all('span', class_='ipc-chip__text')
+        genres = [g.text for g in genre_tags if g.text not in ['Back to top', 'See more', 'Genre']]
+        # Filter genres to be realistic (IMDb sometimes puts other chips here)
+        common_genres = ['Action', 'Adventure', 'Animation', 'Biography', 'Comedy', 'Crime', 'Documentary', 'Drama', 'Family', 'Fantasy', 'History', 'Horror', 'Music', 'Musical', 'Mystery', 'Romance', 'Sci-Fi', 'Sport', 'Thriller', 'War', 'Western']
+        filtered_genres = [g for g in genres if g in common_genres]
+
+        return rating, ", ".join(filtered_genres[:3])
+    except Exception as e:
+        print(f"Metadata error: {e}")
+        return None, None
 
 #rohit_1888 on Tg :
 

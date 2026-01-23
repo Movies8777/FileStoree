@@ -392,12 +392,21 @@ async def cb_handler(client: Bot, query: CallbackQuery):
         if not files:
             return await query.answer(f"No files found for {series['title']} {ep_tag} in DB! Please upload first.", show_alert=True)
 
+        # Metadata extraction for ongoing post
+        from plugins.post import extract_quality
+        all_metadata_sources = [f['file_name'] for f in files] + [f.get('caption', '') for f in files]
+        qualities = extract_quality(all_metadata_sources)
+
         # Format the caption as requested
         caption = (f"<b>✦ {series['title']}</b>\n\n"
                    f"<b>➥ Season - {series['season']}</b>\n"
                    f"<b>➥ Episode - {series['current_ep']}</b>\n"
-                   f"<b>➥ Language - {series['language']}</b>\n\n"
-                   f"<blockquote><b>🔔 New Episode Every {series['release_day']}.</b></blockquote>\n\n"
+                   f"<b>➥ Language - {series['language']}</b>\n")
+
+        if qualities:
+            caption += f"<b>➥ Quality - {qualities}</b>\n"
+
+        caption += (f"\n<blockquote><b>🔔 New Episode Every {series['release_day']}.</b></blockquote>\n\n"
                    f"<blockquote><b>✮ Usᴇ VLC Pʟᴀʏᴇʀ Oʀ Mx Pʟᴀʏᴇʀ To Cʜᴀɴɢᴇ Aᴜᴅɪᴏ Aɴᴅ Sᴜʙᴛɪᴛʟᴇs Fᴏʀ A Bᴇᴛᴛᴇʀ Vɪᴇᴡɪɴɢ Exᴘᴇʀɪᴇɴᴄᴇ.</b></blockquote>")
 
         # Quality buttons logic mirrored from post.py

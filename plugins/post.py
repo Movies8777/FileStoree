@@ -12,11 +12,23 @@ logger = LOGGER(__name__)
 def extract_quality(file_names):
     qualities = set()
     for name in file_names:
-        res_match = re.search(r'(\d{3,4}p|4[kK])', name, re.IGNORECASE)
-        source_match = re.search(r'(Bluray|WEB-DL|Webrip|HDRip|DVDRip|BDRip|WEB)', name, re.IGNORECASE)
+        # Improved resolution regex
+        res_match = re.search(r'(\d{3,4}p|4[kK]|2[kK])', name, re.IGNORECASE)
+        # Improved source regex
+        source_patterns = r'(Bluray|Blu-ray|WEB-DL|Web-DL|WEBDL|Webrip|Web-Rip|Webrip|HDRip|DVDRip|BDRip|BRRip|WEB|HDTV|HDCAM|S-Print|Pre-DVDRip|TS|HC)'
+        source_match = re.search(source_patterns, name, re.IGNORECASE)
 
         res = res_match.group(1).lower() if res_match else ""
         source = source_match.group(1).upper() if source_match else ""
+
+        # Standardize source names
+        if source:
+            if source in ["WEBRIP", "WEB-RIP"]: source = "WEBRip"
+            elif source in ["WEB-DL", "WEBDL", "WEB DL"]: source = "WEB-DL"
+            elif source in ["BLURAY", "BLU-RAY"]: source = "BluRay"
+            elif source in ["BRRIP", "BDRIP"]: source = "BRRip"
+            elif source in ["HDRIP"]: source = "HDRip"
+            elif source in ["DVDRIP"]: source = "DVDRip"
 
         q_str = f"{res} {source}".strip()
         if q_str:
@@ -168,7 +180,7 @@ async def post_command(client: Bot, message: Message):
                 ep_res_groups[ep_val][label].append(link)
 
             # Metadata extraction
-            all_metadata_sources = [f.get('caption') or f['file_name'] for f in all_files]
+            all_metadata_sources = [f['file_name'] for f in all_files] + [f.get('caption', '') for f in all_files]
             qualities = extract_quality(all_metadata_sources)
             years = extract_year(all_metadata_sources)
             audios = extract_audio(all_metadata_sources)
@@ -289,7 +301,7 @@ async def post_command(client: Bot, message: Message):
                     link = f"https://t.me/{client.username}?start={base64_string}"
                     ep_res_groups[tag_val][label].append(link)
 
-                all_metadata_sources = [f.get('caption') or f['file_name'] for f in all_files]
+                all_metadata_sources = [f['file_name'] for f in all_files] + [f.get('caption', '') for f in all_files]
                 qualities = extract_quality(all_metadata_sources)
                 years = extract_year(all_metadata_sources)
                 audios = extract_audio(all_metadata_sources)
@@ -369,7 +381,7 @@ async def post_command(client: Bot, message: Message):
                     link = f"https://t.me/{client.username}?start={base64_string}"
                     res_groups[label].append(link)
 
-                all_metadata_sources = [f.get('caption') or f['file_name'] for f in files]
+                all_metadata_sources = [f['file_name'] for f in files] + [f.get('caption', '') for f in files]
                 qualities = extract_quality(all_metadata_sources)
                 years = extract_year(all_metadata_sources)
                 audios = extract_audio(all_metadata_sources)

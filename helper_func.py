@@ -256,6 +256,8 @@ async def wrap_with_redirect(short_url):
     return f"{REDIRECT_DOMAIN}/?r={encoded}"
 
 def clean_title(title):
+    # Strip Telegram handles and leading separators
+    title = re.sub(r'@\w+\s?[-|:]?\s?', '', title)
     # Common year pattern
     title = re.sub(r'\b(19|20)\d{2}\b', '', title)
     # Common quality/source tags

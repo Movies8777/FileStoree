@@ -145,23 +145,36 @@ async def process_post(client: Bot, message: Message, target_chat_id: int):
 
             search_msg = await message.reply_text(f"<b>Sᴇᴀʀᴄʜɪɴɢ ғᴏʀ {series_name} {season_tag} {start_ep_tag}-{end_ep_tag}...</b>")
 
-            # Find files
+            # Find files (Broader search for better accuracy and performance)
+            results = await db.find_file(f"{series_name} {season_tag}")
+            if not results:
+                return await search_msg.edit("<b>Nᴏ ғɪʟᴇs ғᴏᴜɴᴅ ɪɴ ᴅᴀᴛᴀʙᴀsᴇ!</b>")
+
             all_files = []
-            for ep_num in range(start_ep, end_ep + 1):
-                ep_tag = f"E{ep_num:02d}"
-                files = await db.find_file(f"{series_name} {season_tag} {ep_tag}")
-                all_files.extend(files)
+            found_eps = set()
+
+            # Filter results locally by episode range
+            for file in results:
+                name_to_check = f"{file['file_name']} {file.get('caption', '')}"
+                ep_match = re.search(r'E(?:P|isode)?\s?(\d{1,3})', name_to_check, re.IGNORECASE)
+                if ep_match:
+                    ep_val = int(ep_match.group(1))
+                    if start_ep <= ep_val <= end_ep:
+                        all_files.append(file)
+                        found_eps.add(ep_val)
 
             if not all_files:
-                return await search_msg.edit("<b>Nᴏ ғɪʟᴇs ғᴏᴜɴᴅ ɪɴ ᴅᴀᴛᴀʙᴀsᴇ!</b>")
+                return await search_msg.edit(f"<b>Nᴏ ғɪʟᴇs ғᴏᴜɴᴅ ғᴏʀ {start_ep_tag}-{end_ep_tag}!</b>")
+
+            missing_eps = [i for i in range(start_ep, end_ep + 1) if i not in found_eps]
 
             # Grouping files by episode and quality
             res_groups = {} # {Quality: [file_objects]}
             ep_res_groups = {} # {Ep: {Quality: [link]}}
 
             for file in all_files:
-                file_name = file['file_name']
-                ep_match = re.search(r'E(\d{2,3})', file_name, re.IGNORECASE)
+                file_name = f"{file['file_name']} {file.get('caption', '')}"
+                ep_match = re.search(r'E(?:P|isode)?\s?(\d{1,3})', file_name, re.IGNORECASE)
                 if not ep_match: continue
                 ep_val = f"E{int(ep_match.group(1)):02d}"
 
@@ -199,9 +212,11 @@ async def process_post(client: Bot, message: Message, target_chat_id: int):
             is_multi = any(re.search(r'multi|dual', src, re.IGNORECASE) for src in all_metadata_sources)
 
             # Caption Construction
+            missing_txt = f"⚠️ Missing: {', '.join([f'E{i:02d}' for i in missing_eps])}\n" if missing_eps else ""
             caption_parts = {
                 'title': f"<b>📼 Series: {clean_title(series_name)} {season_tag}\n",
                 'episode': f"🔢 Episode: {start_ep_tag} to {end_ep_tag}\n",
+                'missing': missing_txt,
                 'year': f"📅 Year: {years}\n" if years else "",
                 'quality': f"🎥 Quality: {qualities}\n" if qualities else "",
                 'audio_label': "🔊 Audio: "
@@ -257,7 +272,7 @@ async def process_post(client: Bot, message: Message, target_chat_id: int):
                 )
 
             # Normal Posting
-            caption = caption_parts['title'] + caption_parts['episode'] + caption_parts['year'] + caption_parts['quality']
+            caption = caption_parts['title'] + caption_parts['episode'] + caption_parts['missing'] + caption_parts['year'] + caption_parts['quality']
             if audios:
                 caption += caption_parts['audio_label'] + audios + "\n"
             caption += "</b>"
@@ -293,13 +308,18 @@ async def process_post(client: Bot, message: Message, target_chat_id: int):
                 search_msg = await message.reply_text(f"<b>Sᴇᴀʀᴄʜɪɴɢ ғᴏʀ {series_name} {start_str}-{end_str}...</b>")
 
                 all_files = []
+                found_seasons = set()
                 for val in range(start_val, end_val + 1):
                     tag = f"S{val:02d}"
                     files = await db.find_file(f"{series_name} {tag}")
-                    all_files.extend(files)
+                    if files:
+                        found_seasons.add(val)
+                        all_files.extend(files)
 
                 if not all_files:
                     return await search_msg.edit("<b>Nᴏ ғɪʟᴇs ғᴏᴜɴᴅ ɪɴ ᴅᴀᴛᴀʙᴀsᴇ!</b>")
+
+                missing_seasons = [i for i in range(start_val, end_val + 1) if i not in found_seasons]
 
                 res_groups = {}
                 ep_res_groups = {}
@@ -342,8 +362,10 @@ async def process_post(client: Bot, message: Message, target_chat_id: int):
                 is_multi = any(re.search(r'multi|dual', src, re.IGNORECASE) for src in all_metadata_sources)
 
                 season_info = f"{start_str} - {end_str}" if start_str != end_str else start_str
+                missing_txt = f"⚠️ Missing: {', '.join([f'S{i:02d}' for i in missing_seasons])}\n" if missing_seasons else ""
                 caption_parts = {
                     'title': f"<b>📼 Series: {clean_title(series_name)} {season_info}\n",
+                    'missing': missing_txt,
                     'year': f"📅 Year: {years}\n" if years else "",
                     'quality': f"🎥 Quality: {qualities}\n" if qualities else "",
                     'audio_label': "🔊 Audio: "
@@ -387,7 +409,7 @@ async def process_post(client: Bot, message: Message, target_chat_id: int):
                         reply_markup=get_audio_selection_markup(post_id, [])
                     )
 
-                caption = caption_parts['title'] + caption_parts['year'] + caption_parts['quality']
+                caption = caption_parts['title'] + caption_parts['missing'] + caption_parts['year'] + caption_parts['quality']
                 if audios:
                     caption += caption_parts['audio_label'] + audios + "\n"
                 caption += "</b>"
@@ -549,6 +571,8 @@ async def anime_done_callback(client: Bot, query: CallbackQuery):
     caption = caption_parts['title']
     if 'episode' in caption_parts:
         caption += caption_parts['episode']
+    if 'missing' in caption_parts:
+        caption += caption_parts['missing']
     caption += caption_parts['year'] + caption_parts['quality']
     if audios:
         caption += caption_parts['audio_label'] + audios + "\n"

@@ -177,6 +177,10 @@ async def add_ongoing_series(client: Client, message: Message):
                                        "<b>Format:</b>\n"
                                        "<code>/add_ongoing Title | Season | Language | ReleaseDay | TotalEpisodes | StartingEpisode | Qualities(comma separated)</code>")
 
+    if len(message.command) < 2:
+        return await message.reply_text("<b>Invalid Format!</b>\n"
+                                       "Need details after the command.")
+
     try:
         data = message.text.split(None, 1)[1].split('|')
         if len(data) < 6:

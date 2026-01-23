@@ -13,16 +13,22 @@ def extract_quality(file_names):
     qualities = set()
     for name in file_names:
         res_match = re.search(r'(\d{3,4}p|4[kK])', name, re.IGNORECASE)
-        if res_match:
-            qualities.add(res_match.group(1).lower())
+        source_match = re.search(r'(Bluray|WEB-DL|Webrip|HDRip|DVDRip|BDRip|WEB)', name, re.IGNORECASE)
+
+        res = res_match.group(1).lower() if res_match else ""
+        source = source_match.group(1).upper() if source_match else ""
+
+        q_str = f"{res} {source}".strip()
+        if q_str:
+            qualities.add(q_str)
 
     if not qualities:
         return None
 
-    # Sort qualities (480p, 720p, 1080p, 4k)
+    # Sort qualities primarily by resolution
     def q_sort(q):
-        val = re.sub(r'p|k', '', q, flags=re.I)
-        return int(val) if val.isdigit() else 0
+        res_match = re.search(r'(\d{3,4})', q)
+        return int(res_match.group(1)) if res_match else 0
 
     sorted_q = sorted(list(qualities), key=q_sort)
     return " - ".join(sorted_q)
@@ -128,9 +134,9 @@ async def post_command(client: Bot, message: Message):
             if not all_files:
                 return await search_msg.edit("<b>Nᴏ ғɪʟᴇs ғᴏᴜɴᴅ ɪɴ ᴅᴀᴛᴀʙᴀsᴇ!</b>")
 
-            # Grouping files by episode and resolution
-            res_groups = {} # {Resolution: [file_objects]}
-            ep_res_groups = {} # {Ep: {Res: [link]}}
+            # Grouping files by episode and quality
+            res_groups = {} # {Quality: [file_objects]}
+            ep_res_groups = {} # {Ep: {Quality: [link]}}
 
             for file in all_files:
                 file_name = file['file_name']
@@ -143,14 +149,18 @@ async def post_command(client: Bot, message: Message):
 
                 # Extract quality for this specific file
                 res_m = re.search(r'(\d{3,4}p|4[kK])', file_name, re.IGNORECASE)
-                res = res_m.group(1).lower() if res_m else "hdr"
+                src_m = re.search(r'(Bluray|WEB-DL|Webrip|HDRip|DVDRip|BDRip|WEB)', file_name, re.IGNORECASE)
 
-                if res not in ep_res_groups[ep_val]:
-                    ep_res_groups[ep_val][res] = []
+                res = res_m.group(1).lower() if res_m else ""
+                src = src_m.group(1).upper() if src_m else ""
+                label = f"{res} {src}".strip() or "HDR"
 
-                if res not in res_groups:
-                    res_groups[res] = []
-                res_groups[res].append(file)
+                if label not in ep_res_groups[ep_val]:
+                    ep_res_groups[ep_val][label] = []
+
+                if label not in res_groups:
+                    res_groups[label] = []
+                res_groups[label].append(file)
 
                 string = f"get-{file['msg_id'] * abs(client.db_channel.id)}"
                 base64_string = await encode(string)
@@ -177,10 +187,10 @@ async def post_command(client: Bot, message: Message):
 
             buttons = []
             if len(ep_res_groups) > 1:
-                # Multiple items: Show resolution buttons
+                # Multiple items: Show quality buttons
                 def q_sort(q):
-                    val = re.sub(r'p|k', '', q, flags=re.I)
-                    return int(val) if val.isdigit() else 0
+                    res_match = re.search(r'(\d{3,4})', q)
+                    return int(res_match.group(1)) if res_match else 0
 
                 batch_res_buttons = []
                 for res in sorted(res_groups.keys(), key=q_sort):
@@ -261,14 +271,18 @@ async def post_command(client: Bot, message: Message):
                         ep_res_groups[tag_val] = {}
 
                     res_m = re.search(r'(\d{3,4}p|4[kK])', file_name, re.IGNORECASE)
-                    res = res_m.group(1).lower() if res_m else "hdr"
+                    src_m = re.search(r'(Bluray|WEB-DL|Webrip|HDRip|DVDRip|BDRip|WEB)', file_name, re.IGNORECASE)
 
-                    if res not in ep_res_groups[tag_val]:
-                        ep_res_groups[tag_val][res] = []
+                    res = res_m.group(1).lower() if res_m else ""
+                    src = src_m.group(1).upper() if src_m else ""
+                    label = f"{res} {src}".strip() or "HDR"
 
-                    if res not in res_groups:
-                        res_groups[res] = []
-                    res_groups[res].append(file)
+                    if label not in ep_res_groups[tag_val]:
+                        ep_res_groups[tag_val][label] = []
+
+                    if label not in res_groups:
+                        res_groups[label] = []
+                    res_groups[label].append(file)
 
                     string = f"get-{file['msg_id'] * abs(client.db_channel.id)}"
                     base64_string = await encode(string)
@@ -292,8 +306,8 @@ async def post_command(client: Bot, message: Message):
 
                 buttons = []
                 def q_sort(q):
-                    val = re.sub(r'p|k', '', q, flags=re.I)
-                    return int(val) if val.isdigit() else 0
+                    res_match = re.search(r'(\d{3,4})', q)
+                    return int(res_match.group(1)) if res_match else 0
 
                 batch_res_buttons = []
                 for res in sorted(res_groups.keys(), key=q_sort):
@@ -341,9 +355,14 @@ async def post_command(client: Bot, message: Message):
                 res_groups = {}
                 for file in files:
                     res_match = re.search(r'(\d{3,4}p|4[kK])', file['file_name'], re.IGNORECASE)
-                    res = res_match.group(1).lower() if res_match else "hdr"
-                    if res not in res_groups:
-                        res_groups[res] = []
+                    src_m = re.search(r'(Bluray|WEB-DL|Webrip|HDRip|DVDRip|BDRip|WEB)', file['file_name'], re.IGNORECASE)
+
+                    res = res_match.group(1).lower() if res_match else ""
+                    src = src_m.group(1).upper() if src_m else ""
+                    label = f"{res} {src}".strip() or "HDR"
+
+                    if label not in res_groups:
+                        res_groups[label] = []
 
                     string = f"get-{file['msg_id'] * abs(client.db_channel.id)}"
                     base64_string = await encode(string)
@@ -366,8 +385,8 @@ async def post_command(client: Bot, message: Message):
 
                 buttons = []
                 def q_sort(q):
-                    val = re.sub(r'p|k', '', q, flags=re.I)
-                    return int(val) if val.isdigit() else 0
+                    res_match = re.search(r'(\d{3,4})', q)
+                    return int(res_match.group(1)) if res_match else 0
 
                 all_res_buttons = []
                 for res in sorted(res_groups.keys(), key=q_sort):

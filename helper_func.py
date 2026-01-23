@@ -256,25 +256,36 @@ async def wrap_with_redirect(short_url):
     return f"{REDIRECT_DOMAIN}/?r={encoded}"
 
 def clean_title(title):
-    # Strip Telegram handles and leading separators
-    title = re.sub(r'@\w+\s?[-|:]?\s?', '', title)
-    # Common year pattern
-    title = re.sub(r'\b(19|20)\d{2}\b', '', title)
-    # Common quality/source tags
+    # Strip Telegram handles (e.g., @Codeflix_Bots)
+    title = re.sub(r'@\w+', '', title)
+
+    # Strip common quality, codec, and release tags
     tags = [
-        r'480p', r'720p', r'1080p', r'4k', r'2160p',
-        r'WEB-DL', r'Webrip', r'Web-DL', r'WEBDL', r'BluRay', r'Blu-ray',
-        r'HDRip', r'DVDRip', r'BDRip', r'BRRip', r'HDCAM', r'TS',
-        r'Hindi', r'English', r'Dual', r'Multi', r'ESubs', r'MSubs',
-        r'S\d+', r'E\d+' # Season/Episode tags
+        r'\d{3,4}p', r'\d[kK]', r'x26[45]', r'HEVC', r'10bit', r'HDR(?:ip)?',
+        r'Bluray', r'Blu-ray', r'WEB-DL', r'Webrip', r'WEBDL', r'DVDRip', r'BDRip', r'BRRip',
+        r'Dual Audio', r'Multi-Audio', r'Multi', r'Hindi', r'English', r'ESub', r'MSub',
+        r'HDCAM', r'S-Print', r'Pre-DVDRip', r'TS', r'HC', r'WEB', r'HDTV'
     ]
     for tag in tags:
-        title = re.sub(r'\b' + tag + r'\b', '', title, flags=re.IGNORECASE)
+        title = re.sub(tag, '', title, flags=re.IGNORECASE)
 
-    # Cleanup extra spaces and special characters that might be left over
+    # Strip year (19xx or 20xx)
+    title = re.sub(r'\(?(19|20)\d{2}\)?', '', title)
+
+    # Strip season/episode tags (S01, E01, EP01, Season 1, Episode 1)
+    title = re.sub(r'(S\d+|E\d+|EP\d+|Season\s?\d+|Episode\s?\d+|ESub|MSub)', '', title, flags=re.IGNORECASE)
+
+    # Strip brackets and parentheses and their contents (e.g., [Dual Audio])
+    title = re.sub(r'\[.*?\]|\(.*?\)', '', title)
+
+    # Remove common separators and extra whitespace
+    title = re.sub(r'[|.\-_:]', ' ', title)
+    # Remove single characters left over (like 's' from 'Season')
+    title = re.sub(r'\b[a-zA-Z]\b', '', title)
+    # Remove common file extensions
+    title = re.sub(r'\b(mkv|mp4|avi|srt)\b', '', title, flags=re.IGNORECASE)
     title = re.sub(r'\s+', ' ', title).strip()
-    # Remove trailing/leading dots, dashes, etc
-    title = title.strip('.-_ ')
+
     return title
 
 #rohit_1888 on Tg :

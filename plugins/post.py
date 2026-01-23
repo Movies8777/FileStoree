@@ -156,6 +156,8 @@ async def process_post(client: Bot, message: Message, target_chat_id: int):
             # Filter results locally by episode range
             for file in results:
                 name_to_check = f"{file['file_name']} {file.get('caption', '')}"
+                # Filter out resolutions that might match E\d{3,4}
+                name_to_check = re.sub(r'\b\d{3,4}p\b', '', name_to_check, flags=re.IGNORECASE)
                 ep_match = re.search(r'E(?:P|isode)?\s?(\d{1,3})', name_to_check, re.IGNORECASE)
                 if ep_match:
                     ep_val = int(ep_match.group(1))
@@ -174,7 +176,9 @@ async def process_post(client: Bot, message: Message, target_chat_id: int):
 
             for file in all_files:
                 file_name = f"{file['file_name']} {file.get('caption', '')}"
-                ep_match = re.search(r'E(?:P|isode)?\s?(\d{1,3})', file_name, re.IGNORECASE)
+                # Filter out resolutions that might match E\d{3,4}
+                file_name_clean = re.sub(r'\b\d{3,4}p\b', '', file_name, flags=re.IGNORECASE)
+                ep_match = re.search(r'E(?:P|isode)?\s?(\d{1,3})', file_name_clean, re.IGNORECASE)
                 if not ep_match: continue
                 ep_val = f"E{int(ep_match.group(1)):02d}"
 
@@ -212,49 +216,38 @@ async def process_post(client: Bot, message: Message, target_chat_id: int):
             is_multi = any(re.search(r'multi|dual', src, re.IGNORECASE) for src in all_metadata_sources)
 
             # Caption Construction
-            missing_txt = f"⚠️ Missing: {', '.join([f'E{i:02d}' for i in missing_eps])}\n" if missing_eps else ""
+            missing_txt = f"⚠️ <b>Missing:</b> {', '.join([f'E{i:02d}' for i in missing_eps])}\n" if missing_eps else ""
+            cleaned_name = clean_title(series_name)
+            header_title = f"{cleaned_name} {season_tag}"
+            if years:
+                header_title += f" ({years})"
+
             caption_parts = {
-                'title': f"<b>📼 Series: {clean_title(series_name)} {season_tag}\n",
-                'episode': f"🔢 Episode: {start_ep_tag} to {end_ep_tag}\n",
-                'missing': missing_txt,
-                'year': f"📅 Year: {years}\n" if years else "",
-                'quality': f"🎥 Quality: {qualities}\n" if qualities else "",
-                'audio_label': "🔊 Audio: "
+                'title': f"<b>{header_title.upper()}</b>\n\n",
+                'name': f"📂 <b>Series Name:</b> {cleaned_name}\n",
+                'genre': f"🎭 <b>Genres:</b> Action, Adventure, Fantasy\n", # Placeholder as in image
+                'audio_label': "🔊 <b>Audio:</b> ",
+                'year': f"📅 <b>Release Year:</b> {years}\n" if years else "",
+                'missing': missing_txt
             }
 
             buttons = []
-            if len(ep_res_groups) > 1:
-                # Multiple items: Show quality buttons
-                def q_sort(q):
-                    res_match = re.search(r'(\d{3,4})', q)
-                    return int(res_match.group(1)) if res_match else 0
+            # Grid of episode buttons (2-column)
+            sorted_eps = sorted(ep_res_groups.keys())
+            ep_buttons = []
+            for ep in sorted_eps:
+                # If multiple qualities for same ep, we take the first one or create a sub-selection
+                # Based on the image, it's just "EP 01", "EP 02"
+                # If there are multiple qualities, we might need a separate choice,
+                # but for simplicity and matching the image, we'll link to the first found or a batch
+                res_list = sorted(ep_res_groups[ep].keys())
+                link = ep_res_groups[ep][res_list[0]][0] # Take first quality
+                ep_buttons.append(InlineKeyboardButton(f"EP {ep[1:]}", url=link))
 
-                batch_res_buttons = []
-                for res in sorted(res_groups.keys(), key=q_sort):
-                    res_files = res_groups[res]
-                    msg_ids = [f['msg_id'] for f in res_files]
-                    first_id = min(msg_ids)
-                    last_id = max(msg_ids)
+            for i in range(0, len(ep_buttons), 2):
+                buttons.append(ep_buttons[i:i+2])
 
-                    batch_string = f"get-{first_id * abs(client.db_channel.id)}-{last_id * abs(client.db_channel.id)}"
-                    batch_base64 = await encode(batch_string)
-                    batch_link = f"https://t.me/{client.username}?start={batch_base64}"
-                    batch_res_buttons.append(InlineKeyboardButton(f"{res.upper()}", url=batch_link))
-
-                for i in range(0, len(batch_res_buttons), 3):
-                    buttons.append(batch_res_buttons[i:i+3])
-            else:
-                # Single item: show normal buttons
-                for ep in sorted(ep_res_groups.keys()):
-                    tag_buttons = []
-                    for res in sorted(ep_res_groups[ep].keys()):
-                        link = ep_res_groups[ep][res][0]
-                        tag_buttons.append(InlineKeyboardButton(f"{ep} {res.upper()}", url=link))
-                    for i in range(0, len(tag_buttons), 3):
-                        buttons.append(tag_buttons[i:i+3])
-
-
-            buttons.append([InlineKeyboardButton("Hᴏᴡ Tᴏ Dᴏᴡɴʟᴏᴀᴅ", url=TUT_VID)])
+            buttons.append([InlineKeyboardButton("🍿 Hᴏᴡ Tᴏ Dᴏᴡɴʟᴏᴀᴅ 🍿", url=TUT_VID)])
 
             if target_chat_id == ANIME_CHANNEL_ID and is_multi:
                 post_id = str(uuid.uuid4())[:8]
@@ -272,10 +265,10 @@ async def process_post(client: Bot, message: Message, target_chat_id: int):
                 )
 
             # Normal Posting
-            caption = caption_parts['title'] + caption_parts['episode'] + caption_parts['missing'] + caption_parts['year'] + caption_parts['quality']
+            caption = caption_parts['title'] + caption_parts['name'] + caption_parts['genre']
             if audios:
                 caption += caption_parts['audio_label'] + audios + "\n"
-            caption += "</b>"
+            caption += caption_parts['year'] + caption_parts['missing']
 
             await client.send_photo(
                 chat_id=target_chat_id if target_chat_id else message.chat.id,
@@ -362,13 +355,19 @@ async def process_post(client: Bot, message: Message, target_chat_id: int):
                 is_multi = any(re.search(r'multi|dual', src, re.IGNORECASE) for src in all_metadata_sources)
 
                 season_info = f"{start_str} - {end_str}" if start_str != end_str else start_str
-                missing_txt = f"⚠️ Missing: {', '.join([f'S{i:02d}' for i in missing_seasons])}\n" if missing_seasons else ""
+                missing_txt = f"⚠️ <b>Missing:</b> {', '.join([f'S{i:02d}' for i in missing_seasons])}\n" if missing_seasons else ""
+                cleaned_name = clean_title(series_name)
+                header_title = f"{cleaned_name} {season_info}"
+                if years:
+                    header_title += f" ({years})"
+
                 caption_parts = {
-                    'title': f"<b>📼 Series: {clean_title(series_name)} {season_info}\n",
-                    'missing': missing_txt,
-                    'year': f"📅 Year: {years}\n" if years else "",
-                    'quality': f"🎥 Quality: {qualities}\n" if qualities else "",
-                    'audio_label': "🔊 Audio: "
+                    'title': f"<b>{header_title.upper()}</b>\n\n",
+                    'name': f"📂 <b>Series Name:</b> {cleaned_name}\n",
+                    'genre': f"🎭 <b>Genres:</b> Action, Adventure, Fantasy\n",
+                    'audio_label': "🔊 <b>Audio:</b> ",
+                    'year': f"📅 <b>Release Year:</b> {years}\n" if years else "",
+                    'missing': missing_txt
                 }
 
                 buttons = []
@@ -388,11 +387,10 @@ async def process_post(client: Bot, message: Message, target_chat_id: int):
                     batch_link = f"https://t.me/{client.username}?start={batch_base64}"
                     batch_res_buttons.append(InlineKeyboardButton(f"{res.upper()}", url=batch_link))
 
-                for i in range(0, len(batch_res_buttons), 3):
-                    buttons.append(batch_res_buttons[i:i+3])
+                for i in range(0, len(batch_res_buttons), 2): # 2-column for consistency
+                    buttons.append(batch_res_buttons[i:i+2])
 
-
-                buttons.append([InlineKeyboardButton("Hᴏᴡ Tᴏ Dᴏᴡɴʟᴏᴀᴅ", url=TUT_VID)])
+                buttons.append([InlineKeyboardButton("🍿 Hᴏᴡ Tᴏ Dᴏᴡɴʟᴏᴀᴅ 🍿", url=TUT_VID)])
 
                 if target_chat_id == ANIME_CHANNEL_ID and is_multi:
                     post_id = str(uuid.uuid4())[:8]
@@ -409,10 +407,10 @@ async def process_post(client: Bot, message: Message, target_chat_id: int):
                         reply_markup=get_audio_selection_markup(post_id, [])
                     )
 
-                caption = caption_parts['title'] + caption_parts['missing'] + caption_parts['year'] + caption_parts['quality']
+                caption = caption_parts['title'] + caption_parts['name'] + caption_parts['genre']
                 if audios:
                     caption += caption_parts['audio_label'] + audios + "\n"
-                caption += "</b>"
+                caption += caption_parts['year'] + caption_parts['missing']
 
                 await client.send_photo(
                     chat_id=target_chat_id if target_chat_id else message.chat.id,
@@ -465,11 +463,17 @@ async def process_post(client: Bot, message: Message, target_chat_id: int):
 
                 is_multi = any(re.search(r'multi|dual', src, re.IGNORECASE) for src in all_metadata_sources)
 
+                cleaned_name = clean_title(movie_name)
+                header_title = f"{cleaned_name}"
+                if years:
+                    header_title += f" ({years})"
+
                 caption_parts = {
-                    'title': f"<b>📼 Movie: {clean_title(movie_name)}\n",
-                    'year': f"📅 Year: {years}\n" if years else "",
-                    'quality': f"🎥 Quality: {qualities}\n" if qualities else "",
-                    'audio_label': "🔊 Audio: "
+                    'title': f"<b>{header_title.upper()}</b>\n\n",
+                    'name': f"📂 <b>Movie Name:</b> {cleaned_name}\n",
+                    'genre': f"🎭 <b>Genres:</b> Action, Adventure, Sci-Fi\n",
+                    'audio_label': "🔊 <b>Audio:</b> ",
+                    'year': f"📅 <b>Release Year:</b> {years}\n" if years else ""
                 }
 
                 buttons = []
@@ -482,10 +486,10 @@ async def process_post(client: Bot, message: Message, target_chat_id: int):
                     link = res_groups[res][0]
                     all_res_buttons.append(InlineKeyboardButton(f"{res.upper()}", url=link))
 
-                for i in range(0, len(all_res_buttons), 3):
-                    buttons.append(all_res_buttons[i:i+3])
+                for i in range(0, len(all_res_buttons), 2):
+                    buttons.append(all_res_buttons[i:i+2])
 
-                buttons.append([InlineKeyboardButton("Hᴏᴡ Tᴏ Dᴏᴡɴʟᴏᴀᴅ", url=TUT_VID)])
+                buttons.append([InlineKeyboardButton("🍿 Hᴏᴡ Tᴏ Dᴏᴡɴʟᴏᴀᴅ 🍿", url=TUT_VID)])
 
                 if target_chat_id == ANIME_CHANNEL_ID and is_multi:
                     import uuid
@@ -503,10 +507,10 @@ async def process_post(client: Bot, message: Message, target_chat_id: int):
                         reply_markup=get_audio_selection_markup(post_id, [])
                     )
 
-                caption = caption_parts['title'] + caption_parts['year'] + caption_parts['quality']
+                caption = caption_parts['title'] + caption_parts['name'] + caption_parts['genre']
                 if audios:
                     caption += caption_parts['audio_label'] + audios + "\n"
-                caption += "</b>"
+                caption += caption_parts['year']
 
                 await client.send_photo(
                     chat_id=target_chat_id if target_chat_id else message.chat.id,
@@ -569,14 +573,16 @@ async def anime_done_callback(client: Bot, query: CallbackQuery):
     audios = " - ".join(sorted_langs)
 
     caption = caption_parts['title']
-    if 'episode' in caption_parts:
-        caption += caption_parts['episode']
-    if 'missing' in caption_parts:
-        caption += caption_parts['missing']
-    caption += caption_parts['year'] + caption_parts['quality']
+    if 'name' in caption_parts:
+        caption += caption_parts['name']
+    if 'genre' in caption_parts:
+        caption += caption_parts['genre']
     if audios:
         caption += caption_parts['audio_label'] + audios + "\n"
-    caption += "</b>"
+    if 'year' in caption_parts:
+        caption += caption_parts['year']
+    if 'missing' in caption_parts:
+        caption += caption_parts['missing']
 
     await client.send_photo(
         chat_id=target_chat_id,

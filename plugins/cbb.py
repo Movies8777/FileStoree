@@ -114,12 +114,13 @@ async def cb_handler(client: Bot, query: CallbackQuery):
         total_ongoing = await db.total_ongoing_count()
 
         stats_msg = (
-            "<b>📊 Bᴏᴛ Sᴛᴀᴛɪsᴛɪᴄs</b>\n\n"
-            f"<b>👤 Tᴏᴛᴀʟ Usᴇʀs :</b> <code>{total_users}</code>\n"
-            f"<b>📁 Tᴏᴛᴀʟ Fɪʟᴇs :</b> <code>{total_files}</code>\n"
-            f"<b>✅ Tᴏᴅᴀʏ Vᴇʀɪғɪᴇᴅ :</b> <code>{total_verify}</code>\n"
-            f"<b>📺 Oɴɢᴏɪɴɢ Sᴇʀɪᴇs :</b> <code>{total_ongoing}</code>\n"
-            "━━━━━━━━━━━━━━━━━━━━━━"
+            "<b><blockquote>📊 Bᴏᴛ Sᴛᴀᴛɪsᴛɪᴄs\n"
+            "━━━━━━━━━━━━━━━━━━━━━━\n"
+            f"📂 Tᴏᴛᴀʟ Fɪʟᴇs : {total_files}\n"
+            f"👤 Tᴏᴛᴀʟ Usᴇʀs : {total_users}\n"
+            f"✅ Tᴏᴅᴀʏ Vᴇʀɪғɪᴇᴅ : {total_verify}\n"
+            f"📺 Oɴɢᴏɪɴɢ Sᴇʀɪᴇs : {total_ongoing}\n"
+            "━━━━━━━━━━━━━━━━━━━━━━</blockquote></b>"
         )
 
         await query.message.edit_caption(

@@ -1,13 +1,17 @@
 import re
 import asyncio
+import uuid
 from pyrogram import Client, filters
-from pyrogram.types import Message, InlineKeyboardMarkup, InlineKeyboardButton
+from pyrogram.types import Message, InlineKeyboardMarkup, InlineKeyboardButton, CallbackQuery
 from bot import Bot
 from config import LOGGER, POST_CHANNEL_ID, ANIME_CHANNEL_ID, TUT_VID
 from helper_func import admin, encode, clean_title
 from database.database import db
 
 logger = LOGGER(__name__)
+
+AUDIO_LANGUAGES = ['Hindi', 'English', 'Japanese', 'Tamil', 'Telugu', 'Malayalam', 'Kannada', 'Bengali', 'Marathi', 'Punjabi', 'ESubs']
+PENDING_ANIME_POSTS = {}
 
 def extract_quality(file_names):
     qualities = set()
@@ -103,6 +107,17 @@ def extract_audio(file_names):
 
     return " - ".join(res)
 
+def get_audio_selection_markup(post_id, selected_langs):
+    buttons = []
+    for i, lang in enumerate(AUDIO_LANGUAGES):
+        text = f"✅ {lang}" if lang in selected_langs else lang
+        buttons.append(InlineKeyboardButton(text, callback_data=f"anime_lang:{post_id}:{i}"))
+
+    # 3-column layout
+    rows = [buttons[i:i+3] for i in range(0, len(buttons), 3)]
+    rows.append([InlineKeyboardButton("✨ Fɪɴɪsʜ Pᴏsᴛ ✨", callback_data=f"anime_done:{post_id}")])
+    return InlineKeyboardMarkup(rows)
+
 async def process_post(client: Bot, message: Message, target_chat_id: int):
     cmd_text = message.text.split(None, 1)
     if len(cmd_text) < 2:
@@ -181,17 +196,16 @@ async def process_post(client: Bot, message: Message, target_chat_id: int):
             years = extract_year(all_metadata_sources)
             audios = extract_audio(all_metadata_sources)
 
-            # Caption Construction
-            caption = f"<b>📼 Series: {clean_title(series_name)} {season_tag}\n"
-            caption += f"🔢 Episode: {start_ep_tag} to {end_ep_tag}\n"
-            if years:
-                caption += f"📅 Year: {years}\n"
-            if qualities:
-                caption += f"🎥 Quality: {qualities}\n"
-            if audios:
-                caption += f"🔊 Audio: {audios}\n"
+            is_multi = any(re.search(r'multi|dual', src, re.IGNORECASE) for src in all_metadata_sources)
 
-            caption += "</b>"
+            # Caption Construction
+            caption_parts = {
+                'title': f"<b>📼 Series: {clean_title(series_name)} {season_tag}\n",
+                'episode': f"🔢 Episode: {start_ep_tag} to {end_ep_tag}\n",
+                'year': f"📅 Year: {years}\n" if years else "",
+                'quality': f"🎥 Quality: {qualities}\n" if qualities else "",
+                'audio_label': "🔊 Audio: "
+            }
 
             buttons = []
             if len(ep_res_groups) > 1:
@@ -226,6 +240,27 @@ async def process_post(client: Bot, message: Message, target_chat_id: int):
 
 
             buttons.append([InlineKeyboardButton("Hᴏᴡ Tᴏ Dᴏᴡɴʟᴏᴀᴅ", url=TUT_VID)])
+
+            if target_chat_id == ANIME_CHANNEL_ID and is_multi:
+                post_id = str(uuid.uuid4())[:8]
+                PENDING_ANIME_POSTS[post_id] = {
+                    'target_chat_id': target_chat_id,
+                    'poster_url': poster_url,
+                    'caption_parts': caption_parts,
+                    'buttons': buttons,
+                    'selected_langs': []
+                }
+                await search_msg.delete()
+                return await message.reply_text(
+                    "<b>Detected Multi-Audio! Select languages for the post:</b>",
+                    reply_markup=get_audio_selection_markup(post_id, [])
+                )
+
+            # Normal Posting
+            caption = caption_parts['title'] + caption_parts['episode'] + caption_parts['year'] + caption_parts['quality']
+            if audios:
+                caption += caption_parts['audio_label'] + audios + "\n"
+            caption += "</b>"
 
             await client.send_photo(
                 chat_id=target_chat_id if target_chat_id else message.chat.id,
@@ -304,15 +339,15 @@ async def process_post(client: Bot, message: Message, target_chat_id: int):
                 years = extract_year(all_metadata_sources)
                 audios = extract_audio(all_metadata_sources)
 
+                is_multi = any(re.search(r'multi|dual', src, re.IGNORECASE) for src in all_metadata_sources)
+
                 season_info = f"{start_str} - {end_str}" if start_str != end_str else start_str
-                caption = f"<b>📼 Series: {clean_title(series_name)} {season_info}\n"
-                if years:
-                    caption += f"📅 Year: {years}\n"
-                if qualities:
-                    caption += f"🎥 Quality: {qualities}\n"
-                if audios:
-                    caption += f"🔊 Audio: {audios}\n"
-                caption += "</b>"
+                caption_parts = {
+                    'title': f"<b>📼 Series: {clean_title(series_name)} {season_info}\n",
+                    'year': f"📅 Year: {years}\n" if years else "",
+                    'quality': f"🎥 Quality: {qualities}\n" if qualities else "",
+                    'audio_label': "🔊 Audio: "
+                }
 
                 buttons = []
                 def q_sort(q):
@@ -336,6 +371,26 @@ async def process_post(client: Bot, message: Message, target_chat_id: int):
 
 
                 buttons.append([InlineKeyboardButton("Hᴏᴡ Tᴏ Dᴏᴡɴʟᴏᴀᴅ", url=TUT_VID)])
+
+                if target_chat_id == ANIME_CHANNEL_ID and is_multi:
+                    post_id = str(uuid.uuid4())[:8]
+                    PENDING_ANIME_POSTS[post_id] = {
+                        'target_chat_id': target_chat_id,
+                        'poster_url': poster_url,
+                        'caption_parts': caption_parts,
+                        'buttons': buttons,
+                        'selected_langs': []
+                    }
+                    await search_msg.delete()
+                    return await message.reply_text(
+                        "<b>Detected Multi-Audio! Select languages for the post:</b>",
+                        reply_markup=get_audio_selection_markup(post_id, [])
+                    )
+
+                caption = caption_parts['title'] + caption_parts['year'] + caption_parts['quality']
+                if audios:
+                    caption += caption_parts['audio_label'] + audios + "\n"
+                caption += "</b>"
 
                 await client.send_photo(
                     chat_id=target_chat_id if target_chat_id else message.chat.id,
@@ -386,14 +441,14 @@ async def process_post(client: Bot, message: Message, target_chat_id: int):
                 years = extract_year(all_metadata_sources)
                 audios = extract_audio(all_metadata_sources)
 
-                caption = f"<b>📼 Movie: {clean_title(movie_name)}\n"
-                if years:
-                    caption += f"📅 Year: {years}\n"
-                if qualities:
-                    caption += f"🎥 Quality: {qualities}\n"
-                if audios:
-                    caption += f"🔊 Audio: {audios}\n"
-                caption += "</b>"
+                is_multi = any(re.search(r'multi|dual', src, re.IGNORECASE) for src in all_metadata_sources)
+
+                caption_parts = {
+                    'title': f"<b>📼 Movie: {clean_title(movie_name)}\n",
+                    'year': f"📅 Year: {years}\n" if years else "",
+                    'quality': f"🎥 Quality: {qualities}\n" if qualities else "",
+                    'audio_label': "🔊 Audio: "
+                }
 
                 buttons = []
                 def q_sort(q):
@@ -409,6 +464,27 @@ async def process_post(client: Bot, message: Message, target_chat_id: int):
                     buttons.append(all_res_buttons[i:i+3])
 
                 buttons.append([InlineKeyboardButton("Hᴏᴡ Tᴏ Dᴏᴡɴʟᴏᴀᴅ", url=TUT_VID)])
+
+                if target_chat_id == ANIME_CHANNEL_ID and is_multi:
+                    import uuid
+                    post_id = str(uuid.uuid4())[:8]
+                    PENDING_ANIME_POSTS[post_id] = {
+                        'target_chat_id': target_chat_id,
+                        'poster_url': poster_url,
+                        'caption_parts': caption_parts,
+                        'buttons': buttons,
+                        'selected_langs': []
+                    }
+                    await search_msg.delete()
+                    return await message.reply_text(
+                        "<b>Detected Multi-Audio! Select languages for the post:</b>",
+                        reply_markup=get_audio_selection_markup(post_id, [])
+                    )
+
+                caption = caption_parts['title'] + caption_parts['year'] + caption_parts['quality']
+                if audios:
+                    caption += caption_parts['audio_label'] + audios + "\n"
+                caption += "</b>"
 
                 await client.send_photo(
                     chat_id=target_chat_id if target_chat_id else message.chat.id,
@@ -429,3 +505,61 @@ async def post_command(client: Bot, message: Message):
 @Bot.on_message(filters.command("animepost") & admin)
 async def anime_post_command(client: Bot, message: Message):
     await process_post(client, message, ANIME_CHANNEL_ID)
+
+@Bot.on_callback_query(filters.regex(r'^anime_lang:'))
+async def anime_lang_callback(client: Bot, query: CallbackQuery):
+    _, post_id, lang_idx = query.data.split(':')
+    lang_idx = int(lang_idx)
+    lang = AUDIO_LANGUAGES[lang_idx]
+
+    if post_id not in PENDING_ANIME_POSTS:
+        return await query.answer("Session expired!", show_alert=True)
+
+    selected = PENDING_ANIME_POSTS[post_id]['selected_langs']
+    if lang in selected:
+        selected.remove(lang)
+    else:
+        selected.append(lang)
+
+    await query.message.edit_reply_markup(reply_markup=get_audio_selection_markup(post_id, selected))
+    await query.answer()
+
+@Bot.on_callback_query(filters.regex(r'^anime_done:'))
+async def anime_done_callback(client: Bot, query: CallbackQuery):
+    _, post_id = query.data.split(':')
+
+    if post_id not in PENDING_ANIME_POSTS:
+        return await query.answer("Session expired!", show_alert=True)
+
+    data = PENDING_ANIME_POSTS.pop(post_id)
+    target_chat_id = data['target_chat_id']
+    poster_url = data['poster_url']
+    caption_parts = data['caption_parts']
+    buttons = data['buttons']
+    selected_langs = data['selected_langs']
+
+    # Sort selected languages
+    sorted_langs = sorted(selected_langs)
+    if 'Hindi' in sorted_langs:
+        sorted_langs.remove('Hindi')
+        sorted_langs.insert(0, 'Hindi')
+
+    audios = " - ".join(sorted_langs)
+
+    caption = caption_parts['title']
+    if 'episode' in caption_parts:
+        caption += caption_parts['episode']
+    caption += caption_parts['year'] + caption_parts['quality']
+    if audios:
+        caption += caption_parts['audio_label'] + audios + "\n"
+    caption += "</b>"
+
+    await client.send_photo(
+        chat_id=target_chat_id,
+        photo=poster_url,
+        caption=caption,
+        reply_markup=InlineKeyboardMarkup(buttons)
+    )
+
+    await query.message.edit_text("<b>✅ Anime Post Sent with selected languages!</b>")
+    await query.answer()

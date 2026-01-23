@@ -73,7 +73,13 @@ async def cb_handler(client: Bot, query: CallbackQuery):
             ])
 
         await query.message.edit_caption(
-            caption=START_MSG.format(first=query.from_user.first_name),
+            caption=START_MSG.format(
+                first=query.from_user.first_name,
+                last=query.from_user.last_name,
+                username=None if not query.from_user.username else '@' + query.from_user.username,
+                mention=query.from_user.mention,
+                id=query.from_user.id
+            ),
             reply_markup=InlineKeyboardMarkup(buttons)
         )
 

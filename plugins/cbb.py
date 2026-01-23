@@ -253,7 +253,7 @@ async def cb_handler(client: Bot, query: CallbackQuery):
             [InlineKeyboardButton("📤 Pᴏsᴛ Nᴇxᴛ Eᴘɪsᴏᴅᴇ", callback_data=f"post_ongoing_{series['title'][:20]}")],
             [InlineKeyboardButton("➕ Iɴᴄʀᴇᴍᴇɴᴛ Eᴘ", callback_data=f"inc_ep_{series['title'][:20]}"),
              InlineKeyboardButton("➖ Dᴇᴄʀᴇᴍᴇɴᴛ Eᴘ", callback_data=f"dec_ep_{series['title'][:20]}")],
-            [InlineKeyboardButton("‹ ʙᴀᴄᴋ", callback_data="ongoing_list"),
+            [InlineKeyboardButton("‹ ʙᴀᴄᴋ", callback_data="ongoing_list_0"),
              InlineKeyboardButton("ᴄʟᴏsᴇ", callback_data="close")]
         ]
         await query.message.edit_text(text, reply_markup=InlineKeyboardMarkup(buttons))

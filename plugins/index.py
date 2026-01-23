@@ -67,23 +67,6 @@ async def auto_index(client: Bot, message: Message):
                 msg_id=message.id,
                 caption=caption
             )
-            logger.info(f"[DEBUG] Auto-indexed file: {file_name} (ID: {message.id})")
-
-            # Notify Admin
-            try:
-                # Ensure chat_id is an integer
-                admin_id = int(OWNER_ID) if isinstance(OWNER_ID, str) and OWNER_ID.isdigit() else OWNER_ID
-                await client.send_message(
-                    chat_id=admin_id,
-                    text=(
-                        "<b>📁 <u>Nᴇᴡ Fɪʟᴇ Aᴜᴛᴏ-Iɴᴅᴇxᴇᴅ</u></b>\n\n"
-                        f"<b>Nᴀᴍᴇ:</b> <code>{file_name}</code>\n"
-                        f"<b>Cᴀᴘᴛɪᴏɴ:</b>\n<blockquote>{caption if caption else 'No Caption'}</blockquote>"
-                    )
-                )
-            except Exception as e:
-                logger.error(f"Error notifying admin: {e}")
-
         except Exception as e:
             logger.error(f"Error in auto-indexing: {e}")
 

@@ -126,19 +126,31 @@ async def process_post(client: Bot, message: Message, target_chat_id: int):
 
     full_query = cmd_text[1]
 
-    # Check if it's a series (contains "S\d+ E\d+ to E\d+")
-    series_match = re.search(r'(.+?)\s+(S\d+)\s+(E\d+)\s+to\s+(E\d+)\s+(.+)', full_query, re.IGNORECASE)
+    # Check for series formats
+    # Format 1: name S01 E01 to E02 link
+    series_match = re.search(r'(.+?)\s+(S\d+)\s+(E(?:P)?\d+)\s+to\s+(E(?:P)?\d+)\s+(.+)', full_query, re.IGNORECASE)
 
-    if series_match:
+    # Format 2: name S01 E01 link
+    single_ep_match = re.search(r'(.+?)\s+(S\d+)\s+(E(?:P)?\d+)\s+(.+)', full_query, re.IGNORECASE) if not series_match else None
+
+    if series_match or single_ep_match:
+        match = series_match or single_ep_match
         try:
-            series_name = series_match.group(1).strip()
-            season_tag = series_match.group(2).upper()
-            start_ep_tag = series_match.group(3).upper()
-            end_ep_tag = series_match.group(4).upper()
-            poster_url = series_match.group(5).strip()
+            series_name = match.group(1).strip()
+            season_tag = match.group(2).upper()
 
-            start_ep = int(start_ep_tag[1:])
-            end_ep = int(end_ep_tag[1:])
+            if series_match:
+                start_ep_tag = match.group(3).upper()
+                end_ep_tag = match.group(4).upper()
+                poster_url = match.group(5).strip()
+                start_ep = int(re.sub(r'\D', '', start_ep_tag))
+                end_ep = int(re.sub(r'\D', '', end_ep_tag))
+            else:
+                start_ep_tag = match.group(3).upper()
+                end_ep_tag = start_ep_tag
+                poster_url = match.group(4).strip()
+                start_ep = int(re.sub(r'\D', '', start_ep_tag))
+                end_ep = start_ep
 
             if start_ep > end_ep:
                 return await message.reply_text("<b>Start episode cannot be greater than end episode!</b>")
@@ -488,7 +500,6 @@ async def process_post(client: Bot, message: Message, target_chat_id: int):
                 buttons.append([InlineKeyboardButton("Hᴏᴡ Tᴏ Dᴏᴡɴʟᴏᴀᴅ", url=TUT_VID)])
 
                 if target_chat_id == ANIME_CHANNEL_ID and is_multi:
-                    import uuid
                     post_id = str(uuid.uuid4())[:8]
                     PENDING_ANIME_POSTS[post_id] = {
                         'target_chat_id': target_chat_id,

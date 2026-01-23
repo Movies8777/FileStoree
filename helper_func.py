@@ -243,8 +243,12 @@ async def get_shortlink(url, api, link):
     link = await shortzy.convert(link)
     return link
 
+async def subscribed_filter(filter, client, update):
+    if not update.from_user:
+        return False
+    return await is_subscribed(client, update.from_user.id)
 
-subscribed = filters.create(is_subscribed)
+subscribed = filters.create(subscribed_filter)
 admin = filters.create(check_admin)
 
 async def wrap_with_redirect(short_url):

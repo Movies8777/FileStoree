@@ -236,36 +236,12 @@ async def cb_handler(client: Bot, query: CallbackQuery):
             reply_markup=InlineKeyboardMarkup(buttons)
         )
 
-    elif data.startswith("manage_ongoing_"):
-        title_prefix = data.replace("manage_ongoing_", "")
-        all_ongoing = await db.get_all_ongoing()
-        series = None
-        for s in all_ongoing:
-            if s['title'].startswith(title_prefix):
-                series = s
-                break
+    elif data == "ongoing_list" or data.startswith("ongoing_list_"):
+        if data == "ongoing_list":
+            page = 0
+        else:
+            page = int(data.split("_")[2])
 
-        if not series:
-            return await query.answer("Series not found!", show_alert=True)
-
-        text = (f"<b>📺 Mᴀɴᴀɢɪɴɢ: {series['title']}</b>\n\n"
-                f"<b>Sᴇᴀsᴏɴ:</b> {series['season']}\n"
-                f"<b>ᴄᴜʀʀᴇɴᴛ Eᴘɪsᴏᴅᴇ:</b> {series['current_ep']}\n"
-                f"<b>Tᴏᴛᴀʟ Eᴘɪsᴏᴅᴇs:</b> {series['total_eps']}\n"
-                f"<b>Lᴀɴɢᴜᴀɢᴇ:</b> {series['language']}\n"
-                f"<b>Rᴇʟᴇᴀsᴇ Dᴀʏ:</b> {series['release_day']}")
-
-        buttons = [
-            [InlineKeyboardButton("📤 Pᴏsᴛ Nᴇxᴛ Eᴘɪsᴏᴅᴇ", callback_data=f"post_ongoing_{series['title'][:20]}")],
-            [InlineKeyboardButton("➕ Iɴᴄʀᴇᴍᴇɴᴛ Eᴘ", callback_data=f"inc_ep_{series['title'][:20]}"),
-             InlineKeyboardButton("➖ Dᴇᴄʀᴇᴍᴇɴᴛ Eᴘ", callback_data=f"dec_ep_{series['title'][:20]}")],
-            [InlineKeyboardButton("‹ ʙᴀᴄᴋ", callback_data="ongoing_list_0"),
-             InlineKeyboardButton("ᴄʟᴏsᴇ", callback_data="close")]
-        ]
-        await query.message.edit_text(text, reply_markup=InlineKeyboardMarkup(buttons))
-
-    elif data.startswith("ongoing_list_"):
-        page = int(data.split("_")[2])
         all_ongoing = await db.get_all_ongoing()
         if not all_ongoing:
             return await query.message.edit_text("<b>No ongoing series found!</b>",
@@ -297,9 +273,33 @@ async def cb_handler(client: Bot, query: CallbackQuery):
         await query.message.edit_text("<b>📺 Oɴɢᴏɪɴɢ Sᴇʀɪᴇs Mᴀɴᴀɢᴇᴍᴇɴᴛ</b>",
                                      reply_markup=InlineKeyboardMarkup(buttons))
 
-    elif data == "ongoing_list":
-        # Default to first page
-        await cb_handler(client, query.copy(data="ongoing_list_0"))
+    elif data.startswith("manage_ongoing_"):
+        title_prefix = data.replace("manage_ongoing_", "")
+        all_ongoing = await db.get_all_ongoing()
+        series = None
+        for s in all_ongoing:
+            if s['title'].startswith(title_prefix):
+                series = s
+                break
+
+        if not series:
+            return await query.answer("Series not found!", show_alert=True)
+
+        text = (f"<b>📺 Mᴀɴᴀɢɪɴɢ: {series['title']}</b>\n\n"
+                f"<b>Sᴇᴀsᴏɴ:</b> {series['season']}\n"
+                f"<b>ᴄᴜʀʀᴇɴᴛ Eᴘɪsᴏᴅᴇ:</b> {series['current_ep']}\n"
+                f"<b>Tᴏᴛᴀʟ Eᴘɪsᴏᴅᴇs:</b> {series['total_eps']}\n"
+                f"<b>Lᴀɴɢᴜᴀɢᴇ:</b> {series['language']}\n"
+                f"<b>Rᴇʟᴇᴀsᴇ Dᴀʏ:</b> {series['release_day']}")
+
+        buttons = [
+            [InlineKeyboardButton("📤 Pᴏsᴛ Nᴇxᴛ Eᴘɪsᴏᴅᴇ", callback_data=f"post_ongoing_{series['title'][:20]}")],
+            [InlineKeyboardButton("➕ Iɴᴄʀᴇᴍᴇɴᴛ Eᴘ", callback_data=f"inc_ep_{series['title'][:20]}"),
+             InlineKeyboardButton("➖ Dᴇᴄʀᴇᴍᴇɴᴛ Eᴘ", callback_data=f"dec_ep_{series['title'][:20]}")],
+            [InlineKeyboardButton("‹ ʙᴀᴄᴋ", callback_data="ongoing_list_0"),
+             InlineKeyboardButton("ᴄʟᴏsᴇ", callback_data="close")]
+        ]
+        await query.message.edit_text(text, reply_markup=InlineKeyboardMarkup(buttons))
 
     elif data.startswith("inc_ep_") or data.startswith("dec_ep_"):
         is_inc = data.startswith("inc_ep_")
@@ -419,7 +419,26 @@ async def cb_handler(client: Bot, query: CallbackQuery):
                 # Series completed! Remove from ongoing list
                 await db.del_ongoing(series['title'])
                 await query.answer(f"Series {series['title']} completed and removed from list!", show_alert=True)
-                return await cb_handler(client, query.copy(data="ongoing_list_0"))
+                # Redirect to ongoing_list_0 logic
+                all_ongoing = await db.get_all_ongoing()
+                if not all_ongoing:
+                    return await query.message.edit_text("<b>No ongoing series found!</b>",
+                                                        reply_markup=InlineKeyboardMarkup([[InlineKeyboardButton("ᴄʟᴏsᴇ", callback_data="close")]]))
+                page = 0
+                per_page = 10
+                total_pages = (len(all_ongoing) + per_page - 1) // per_page
+                start = page * per_page
+                end = start + per_page
+                buttons = []
+                for series_item in all_ongoing[start:end]:
+                    buttons.append([InlineKeyboardButton(f"📺 {series_item['title']} (S{series_item['season']} E{series_item['current_ep']})",
+                                                         callback_data=f"manage_ongoing_{series_item['title'][:20]}")])
+                nav = []
+                if page < total_pages - 1:
+                    nav.append(InlineKeyboardButton("Nᴇxᴛ ▶️", callback_data=f"ongoing_list_{page+1}"))
+                if nav: buttons.append(nav)
+                buttons.append([InlineKeyboardButton("ᴄʟᴏsᴇ", callback_data="close")])
+                return await query.message.edit_text("<b>📺 Oɴɢᴏɪɴɢ Sᴇʀɪᴇs Mᴀɴᴀɢᴇᴍᴇɴᴛ</b>", reply_markup=InlineKeyboardMarkup(buttons))
 
             await db.update_ongoing_ep(series['title'], str(new_ep))
             await query.answer("Successfully posted and incremented episode!", show_alert=True)

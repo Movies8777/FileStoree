@@ -278,17 +278,14 @@ class Rohit:
             'msg_id': msg_id,
             'caption': caption
         }
-        # Check if already indexed (optional, but good for avoiding duplicates if re-indexing)
-        logging.info(f"[DEBUG] Indexing file: {file_name} (Size: {file_size}, Type: {file_type}, Msg ID: {msg_id})")
         try:
             await self.file_data.update_one(
                 {'file_id': file_id},
                 {'$set': file_dict},
                 upsert=True
             )
-            logging.info(f"[DEBUG] Successfully indexed/updated: {file_name}")
         except Exception as e:
-            logging.error(f"[DEBUG] Failed to index {file_name}: {e}")
+            logging.error(f"Failed to index {file_name}: {e}")
 
     async def find_file(self, query):
         import re

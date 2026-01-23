@@ -23,8 +23,8 @@ def extract_quality(file_names):
 
         # Standardize source names
         if source:
-            if source in ["WEBRIP", "WEB-RIP"]: source = "WEBRip"
-            elif source in ["WEB-DL", "WEBDL", "WEB DL"]: source = "WEB-DL"
+            if source in ["WEBRIP", "WEB-RIP", "WEB-DL", "WEBDL", "WEB DL", "WEB"]:
+                source = "" # Remove WEB-DL and variants as requested
             elif source in ["BLURAY", "BLU-RAY"]: source = "BluRay"
             elif source in ["BRRIP", "BDRIP"]: source = "BRRip"
             elif source in ["HDRIP"]: source = "HDRip"
@@ -165,6 +165,8 @@ async def post_command(client: Bot, message: Message):
 
                 res = res_m.group(1).lower() if res_m else ""
                 src = src_m.group(1).upper() if src_m else ""
+                if src in ["WEB-DL", "WEBDL", "WEB", "WEBRIP"]:
+                    src = ""
                 label = f"{res} {src}".strip() or "HDR"
 
                 if label not in ep_res_groups[ep_val]:
@@ -287,6 +289,8 @@ async def post_command(client: Bot, message: Message):
 
                     res = res_m.group(1).lower() if res_m else ""
                     src = src_m.group(1).upper() if src_m else ""
+                    if src in ["WEB-DL", "WEBDL", "WEB", "WEBRIP"]:
+                        src = ""
                     label = f"{res} {src}".strip() or "HDR"
 
                     if label not in ep_res_groups[tag_val]:
@@ -371,6 +375,8 @@ async def post_command(client: Bot, message: Message):
 
                     res = res_match.group(1).lower() if res_match else ""
                     src = src_m.group(1).upper() if src_m else ""
+                    if src in ["WEB-DL", "WEBDL", "WEB", "WEBRIP"]:
+                        src = ""
                     label = f"{res} {src}".strip() or "HDR"
 
                     if label not in res_groups:

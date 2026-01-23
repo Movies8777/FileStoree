@@ -70,9 +70,7 @@ def extract_audio(file_names):
         'Kannada': r'Kannada',
         'Bengali': r'Bengali',
         'Marathi': r'Marathi',
-        'Punjabi': r'Punjabi',
-        'Multi': r'Multi',
-        'Dual': r'Dual'
+        'Punjabi': r'Punjabi'
     }
 
     sub_patterns = {

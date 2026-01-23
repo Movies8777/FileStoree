@@ -159,12 +159,11 @@ async def get_stats(client: Client, message: Message):
     total_ongoing = await db.total_ongoing_count()
 
     stats_msg = (
-        "<b>📊 Bᴏᴛ Sᴛᴀᴛɪsᴛɪᴄs</b>\n\n"
-        f"<b>👤 Tᴏᴛᴀʟ Usᴇʀs :</b> <code>{total_users}</code>\n"
-        f"<b>📁 Tᴏᴛᴀʟ Fɪʟᴇs :</b> <code>{total_files}</code>\n"
-        f"<b>✅ Tᴏᴅᴀʏ Vᴇʀɪғɪᴇᴅ :</b> <code>{total_verify}</code>\n"
-        f"<b>📺 Oɴɢᴏɪɴɢ Sᴇʀɪᴇs :</b> <code>{total_ongoing}</code>\n"
-        "━━━━━━━━━━━━━━━━━━━━━━"
+        "<b><blockquote>📊 ʙᴏᴛ sᴛᴀᴛɪsᴛɪᴄs\n\n"
+        f"📁 ᴛᴏᴛᴀʟ ғɪʟᴇs : {total_files}\n"
+        f"👤 ᴛᴏᴛᴀʟ ᴜsᴇʀs : {total_users}\n"
+        f"✅ ᴠᴇʀɪғɪᴇᴅ ᴛᴏᴅᴀʏ : {total_verify}\n"
+        f"📺 ᴏɴɢᴏɪɴɢ sᴇʀɪᴇs : {total_ongoing}</blockquote></b>"
     )
 
     reply_markup = InlineKeyboardMarkup([[InlineKeyboardButton("ᴄʟᴏsᴇ", callback_data="close")]])

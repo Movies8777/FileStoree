@@ -46,15 +46,15 @@ async def search_handler(client: Client, message: Message):
     # Add How To Download button
     buttons.append([InlineKeyboardButton("🍿 Hᴏᴡ Tᴏ Dᴏᴡɴʟᴏᴀᴅ 🍿", url=TUT_VID)])
 
-    text = f"<b>🔎 Sᴇᴀʀᴄʜ Rᴇsᴜʟᴛs Fᴏʀ: <code>{query}</code></b>\n\n"
+    text = f"<b>🔎 Sᴇᴀʀᴄʜ Rᴇsᴜʟᴛs Fᴏʀ : <code>{query}</code>\n\n"
     text += f"⭐ TITLE: <code>{query.upper()}</code>\n"
     text += f"━━━━━━━━━━━━━━━━━━━━━━\n"
     if len(files) > 10:
-        text += f"<i>Sʜᴏᴡɪɴɢ ᴛᴏᴘ 10 ʀᴇsᴜʟᴛs ᴏᴜᴛ ᴏғ {len(files)}:</i>"
+        text += f"Sʜᴏᴡɪɴɢ ᴛᴏᴘ 10 ʀᴇsᴜʟᴛs ᴏᴜᴛ ᴏғ {len(files)}:\n"
     else:
-        text += f"<i>Fᴏᴜɴᴅ {len(files)} ʀᴇsᴜʟᴛs:</i>"
+        text += f"Fᴏᴜɴᴅ {len(files)} ʀᴇsᴜʟᴛs:\n"
 
-    text += "\n\n<b><blockquote>⚠️ Fɪʟᴇs ᴡɪʟʟ ʙᴇ ᴅᴇʟᴇᴛᴇᴅ ɪɴ 10 ᴍɪɴᴜᴛᴇs ᴛᴏ ᴀᴠᴏɪᴅ ᴄᴏᴘʏʀɪɢʜᴛ! Sᴏ ᴅᴏᴡɴʟᴏᴀᴅ ғᴀsᴛ!</blockquote></b>"
+    text += "\n<blockquote>⚠️ Fɪʟᴇs ᴡɪʟʟ ʙᴇ ᴅᴇʟᴇᴛᴇᴅ ɪɴ 10 ᴍɪɴᴜᴛᴇs ᴛᴏ ᴀᴠᴏɪᴅ ᴄᴏᴘʏʀɪɢʜᴛ! Sᴏ ᴅᴏᴡɴʟᴏᴀᴅ ғᴀsᴛ!</blockquote></b>"
 
     await search_msg.edit(
         text=text,

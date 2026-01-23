@@ -4,7 +4,7 @@ from pyrogram import Client, filters
 from pyrogram.types import Message, InlineKeyboardMarkup, InlineKeyboardButton
 from bot import Bot
 from config import LOGGER, POST_CHANNEL_ID, TUT_VID
-from helper_func import admin, encode
+from helper_func import admin, encode, clean_title
 from database.database import db
 
 logger = LOGGER(__name__)
@@ -186,7 +186,7 @@ async def post_command(client: Bot, message: Message):
             audios = extract_audio(all_metadata_sources)
 
             # Caption Construction
-            caption = f"<b>📼 Series: {series_name} {season_tag}\n"
+            caption = f"<b>📼 Series: {clean_title(series_name)} {season_tag}\n"
             caption += f"🔢 Episode: {start_ep_tag} to {end_ep_tag}\n"
             if years:
                 caption += f"📅 Year: {years}\n"
@@ -307,7 +307,7 @@ async def post_command(client: Bot, message: Message):
                 audios = extract_audio(all_metadata_sources)
 
                 season_info = f"{start_str} - {end_str}" if start_str != end_str else start_str
-                caption = f"<b>📼 Series: {series_name} {season_info}\n"
+                caption = f"<b>📼 Series: {clean_title(series_name)} {season_info}\n"
                 if years:
                     caption += f"📅 Year: {years}\n"
                 if qualities:
@@ -386,7 +386,7 @@ async def post_command(client: Bot, message: Message):
                 years = extract_year(all_metadata_sources)
                 audios = extract_audio(all_metadata_sources)
 
-                caption = f"<b>📼 Movie: {movie_name}\n"
+                caption = f"<b>📼 Movie: {clean_title(movie_name)}\n"
                 if years:
                     caption += f"📅 Year: {years}\n"
                 if qualities:

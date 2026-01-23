@@ -3,7 +3,7 @@ from pyrogram import Client, filters
 from pyrogram.types import InlineKeyboardMarkup, InlineKeyboardButton, Message
 from bot import Bot
 from config import *
-from helper_func import is_subscribed, encode
+from helper_func import is_subscribed, encode, clean_title
 from database.database import db
 import asyncio
 
@@ -47,7 +47,7 @@ async def search_handler(client: Client, message: Message):
     buttons.append([InlineKeyboardButton("🍿 Hᴏᴡ Tᴏ Dᴏᴡɴʟᴏᴀᴅ 🍿", url=TUT_VID)])
 
     text = f"<b>🔎 Sᴇᴀʀᴄʜ Rᴇsᴜʟᴛs Fᴏʀ : <code>{query}</code>\n\n"
-    text += f"⭐ TITLE: <code>{query.upper()}</code>\n"
+    text += f"⭐ TITLE: <code>{clean_title(query).upper()}</code>\n"
     text += f"━━━━━━━━━━━━━━━━━━━━━━\n"
     if len(files) > 10:
         text += f"Sʜᴏᴡɪɴɢ ᴛᴏᴘ 10 ʀᴇsᴜʟᴛs ᴏᴜᴛ ᴏғ {len(files)}:\n"

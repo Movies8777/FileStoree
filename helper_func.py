@@ -255,6 +255,26 @@ async def wrap_with_redirect(short_url):
     encoded = await encode(short_url)
     return f"{REDIRECT_DOMAIN}/?r={encoded}"
 
+def clean_title(title):
+    # Common year pattern
+    title = re.sub(r'\b(19|20)\d{2}\b', '', title)
+    # Common quality/source tags
+    tags = [
+        r'480p', r'720p', r'1080p', r'4k', r'2160p',
+        r'WEB-DL', r'Webrip', r'Web-DL', r'WEBDL', r'BluRay', r'Blu-ray',
+        r'HDRip', r'DVDRip', r'BDRip', r'BRRip', r'HDCAM', r'TS',
+        r'Hindi', r'English', r'Dual', r'Multi', r'ESubs', r'MSubs',
+        r'S\d+', r'E\d+' # Season/Episode tags
+    ]
+    for tag in tags:
+        title = re.sub(r'\b' + tag + r'\b', '', title, flags=re.IGNORECASE)
+
+    # Cleanup extra spaces and special characters that might be left over
+    title = re.sub(r'\s+', ' ', title).strip()
+    # Remove trailing/leading dots, dashes, etc
+    title = title.strip('.-_ ')
+    return title
+
 #rohit_1888 on Tg :
 
 # Don't Remove Credit @CodeFlix_Bots, @rohit_1888

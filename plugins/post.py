@@ -236,6 +236,9 @@ async def process_post(client: Bot, message: Message, target_chat_id: int):
             }
 
             buttons = []
+            if missing_eps:
+                buttons.append([InlineKeyboardButton("⚠️ Mɪssɪɴɢ Eᴘɪsᴏᴅᴇs", callback_data=f"missing_eps:{','.join(map(str, missing_eps))}")])
+
             if len(ep_res_groups) > 1:
                 # Multiple items: Show quality buttons
                 def q_sort(q):
@@ -289,14 +292,18 @@ async def process_post(client: Bot, message: Message, target_chat_id: int):
             if audios:
                 caption += f"<b><blockquote>{caption_parts['audio_label']}{audios}</blockquote></b>"
 
-            await client.send_photo(
-                chat_id=target_chat_id if target_chat_id else message.chat.id,
-                photo=poster_url,
-                caption=caption,
-                reply_markup=InlineKeyboardMarkup(buttons)
-            )
-            await search_msg.delete()
-            await message.reply_text("<b>✅ Series Post Sent!</b>")
+            try:
+                await client.send_photo(
+                    chat_id=target_chat_id if target_chat_id else message.chat.id,
+                    photo=poster_url,
+                    caption=caption,
+                    reply_markup=InlineKeyboardMarkup(buttons)
+                )
+                await search_msg.delete()
+                await message.reply_text("<b>✅ Series Post Sent!</b>")
+            except Exception as e:
+                await search_msg.edit(f"<b>❌ Failed to send post:</b> <code>{e}</code>")
+                logger.error(f"Error sending series post: {e}")
 
         except Exception as e:
             logger.error(f"Error in series post: {e}")
@@ -386,6 +393,9 @@ async def process_post(client: Bot, message: Message, target_chat_id: int):
                 }
 
                 buttons = []
+                if missing_seasons:
+                    buttons.append([InlineKeyboardButton("⚠️ Mɪssɪɴɢ Sᴇᴀsᴏɴs", callback_data=f"missing_seasons:{','.join(map(str, missing_seasons))}")])
+
                 def q_sort(q):
                     res_match = re.search(r'(\d{3,4})', q)
                     return int(res_match.group(1)) if res_match else 0
@@ -427,14 +437,18 @@ async def process_post(client: Bot, message: Message, target_chat_id: int):
                 if audios:
                     caption += f"<b><blockquote>{caption_parts['audio_label']}{audios}</blockquote></b>"
 
-                await client.send_photo(
-                    chat_id=target_chat_id if target_chat_id else message.chat.id,
-                    photo=poster_url,
-                    caption=caption,
-                    reply_markup=InlineKeyboardMarkup(buttons)
-                )
-                await search_msg.delete()
-                await message.reply_text("<b>✅ Series Post Sent!</b>")
+                try:
+                    await client.send_photo(
+                        chat_id=target_chat_id if target_chat_id else message.chat.id,
+                        photo=poster_url,
+                        caption=caption,
+                        reply_markup=InlineKeyboardMarkup(buttons)
+                    )
+                    await search_msg.delete()
+                    await message.reply_text("<b>✅ Series Post Sent!</b>")
+                except Exception as e:
+                    await search_msg.edit(f"<b>❌ Failed to send post:</b> <code>{e}</code>")
+                    logger.error(f"Error sending series post (old format): {e}")
             except Exception as e:
                 logger.error(f"Error in series post: {e}")
                 return await message.reply_text(f"<b>Error:</b> {e}")
@@ -521,14 +535,18 @@ async def process_post(client: Bot, message: Message, target_chat_id: int):
                 if audios:
                     caption += f"<b><blockquote>{caption_parts['audio_label']}{audios}</blockquote></b>"
 
-                await client.send_photo(
-                    chat_id=target_chat_id if target_chat_id else message.chat.id,
-                    photo=poster_url,
-                    caption=caption,
-                    reply_markup=InlineKeyboardMarkup(buttons)
-                )
-                await search_msg.delete()
-                await message.reply_text("<b>✅ Movie Post Sent!</b>")
+                try:
+                    await client.send_photo(
+                        chat_id=target_chat_id if target_chat_id else message.chat.id,
+                        photo=poster_url,
+                        caption=caption,
+                        reply_markup=InlineKeyboardMarkup(buttons)
+                    )
+                    await search_msg.delete()
+                    await message.reply_text("<b>✅ Movie Post Sent!</b>")
+                except Exception as e:
+                    await search_msg.edit(f"<b>❌ Failed to send post:</b> <code>{e}</code>")
+                    logger.error(f"Error sending movie post: {e}")
             except Exception as e:
                 logger.error(f"Error in movie post: {e}")
                 return await message.reply_text(f"<b>Error:</b> {e}")
@@ -591,12 +609,32 @@ async def anime_done_callback(client: Bot, query: CallbackQuery):
     if audios:
         caption += f"<b><blockquote>{caption_parts['audio_label']}{audios}</blockquote></b>"
 
-    await client.send_photo(
-        chat_id=target_chat_id,
-        photo=poster_url,
-        caption=caption,
-        reply_markup=InlineKeyboardMarkup(buttons)
+    try:
+        await client.send_photo(
+            chat_id=target_chat_id,
+            photo=poster_url,
+            caption=caption,
+            reply_markup=InlineKeyboardMarkup(buttons)
+        )
+        await query.message.edit_text("<b>✅ Anime Post Sent with selected languages!</b>")
+    except Exception as e:
+        await query.message.edit_text(f"<b>❌ Failed to send post:</b> <code>{e}</code>")
+        logger.error(f"Error in anime_done_callback: {e}")
+
+    await query.answer()
+
+@Bot.on_callback_query(filters.regex(r'^missing_eps:'))
+async def missing_eps_callback(client: Bot, query: CallbackQuery):
+    eps = query.data.split(':')[1]
+    await query.answer(
+        f"⚠️ Missing Episodes: {eps}\n\nPlease upload these episodes to the database channel to complete the series!",
+        show_alert=True
     )
 
-    await query.message.edit_text("<b>✅ Anime Post Sent with selected languages!</b>")
-    await query.answer()
+@Bot.on_callback_query(filters.regex(r'^missing_seasons:'))
+async def missing_seasons_callback(client: Bot, query: CallbackQuery):
+    seasons = query.data.split(':')[1]
+    await query.answer(
+        f"⚠️ Missing Seasons: {seasons}\n\nPlease upload these seasons to the database channel to complete the series!",
+        show_alert=True
+    )

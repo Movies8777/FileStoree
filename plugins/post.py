@@ -231,18 +231,16 @@ async def process_post(client: Bot, message: Message, target_chat_id: int):
 
             # Metadata block without N/A
             metadata_txt = ""
-            if genre and genre != "N/A": metadata_txt += f"🎭 Gᴇɴʀᴇ : {genre}\n"
-            if rating and rating != "N/A": metadata_txt += f"🌟 Rᴀᴛɪɴɢ : {rating}\n"
-            if years and years != "N/A": metadata_txt += f"📅 Yᴇᴀʀ : {years}\n"
+            # Series example doesn't show extra metadata like genre/rating
 
-            metadata_block = f"<b><blockquote>{metadata_txt.strip()}</blockquote></b>\n" if metadata_txt else ""
-            ep_range = f"{start_ep_tag} - {end_ep_tag}" if start_ep != end_ep else start_ep_tag
+            metadata_block = ""
+            ep_range = f"{start_ep_tag} to {end_ep_tag}" if start_ep != end_ep else start_ep_tag
 
             caption_parts = {
-                'title': f"<b><blockquote>✨ {clean_title(series_name)} ❞</blockquote></b>\n\n",
+                'title': f"<b>📼 Series: {clean_title(series_name)} {season_tag}</b>\n",
                 'metadata': metadata_block,
-                'episode': f"<b><blockquote>    Sᴇᴀsᴏɴ : {season_tag}          ❞\n🔢 Eᴘɪsᴏᴅᴇ : {ep_range}\n🎥 Qᴜᴀʟɪᴛʏ : {qualities or 'N/A'}</blockquote></b>\n",
-                'audio_label': "🔊 Aᴜᴅɪᴏ : "
+                'episode': f"<b>🔢 Episode: {ep_range}\n🎥 Quality: {qualities or 'N/A'}</b>\n",
+                'audio_label': "🔊 Audio: "
             }
 
             buttons = []
@@ -298,7 +296,7 @@ async def process_post(client: Bot, message: Message, target_chat_id: int):
             # Normal Posting
             caption = caption_parts['title'] + caption_parts['metadata'] + caption_parts['episode']
             if audios:
-                caption += f"<b><blockquote>{caption_parts['audio_label']}{audios} ❞</blockquote></b>"
+                caption += f"<b>{caption_parts['audio_label']}{audios}</b>"
 
             try:
                 await client.send_photo(
@@ -398,17 +396,14 @@ async def process_post(client: Bot, message: Message, target_chat_id: int):
 
                 # Metadata block without N/A
                 metadata_txt = ""
-                if genre and genre != "N/A": metadata_txt += f"🎭 Gᴇɴʀᴇ : {genre}\n"
-                if rating and rating != "N/A": metadata_txt += f"🌟 Rᴀᴛɪɴɢ : {rating}\n"
-                if years and years != "N/A": metadata_txt += f"📅 Yᴇᴀʀ : {years}\n"
 
-                metadata_block = f"<b><blockquote>{metadata_txt.strip()}</blockquote></b>\n" if metadata_txt else ""
+                metadata_block = ""
 
                 caption_parts = {
-                    'title': f"<b><blockquote>✨ {clean_title(series_name)} ❞</blockquote></b>\n\n",
+                    'title': f"<b>📼 Series: {clean_title(series_name)} {season_info}</b>\n",
                     'metadata': metadata_block,
-                    'episode': f"<b><blockquote>    Sᴇᴀsᴏɴ : {season_info}          ❞\n🎥 Qᴜᴀʟɪᴛʏ : {qualities or 'N/A'}</blockquote></b>\n",
-                    'audio_label': "🔊 Aᴜᴅɪᴏ : "
+                    'episode': f"<b>🎥 Quality: {qualities or 'N/A'}</b>\n",
+                    'audio_label': "🔊 Audio: "
                 }
 
                 buttons = []
@@ -452,7 +447,7 @@ async def process_post(client: Bot, message: Message, target_chat_id: int):
 
                 caption = caption_parts['title'] + caption_parts['metadata'] + caption_parts['episode']
                 if audios:
-                    caption += f"<b><blockquote>{caption_parts['audio_label']}{audios} ❞</blockquote></b>"
+                    caption += f"<b>{caption_parts['audio_label']}{audios}</b>"
 
                 try:
                     await client.send_photo(
@@ -513,17 +508,15 @@ async def process_post(client: Bot, message: Message, target_chat_id: int):
 
                 # Metadata block without N/A
                 metadata_txt = ""
-                if genre and genre != "N/A": metadata_txt += f"🎭 Gᴇɴʀᴇ : {genre}\n"
-                if rating and rating != "N/A": metadata_txt += f"🌟 Rᴀᴛɪɴɢ : {rating}\n"
-                if years and years != "N/A": metadata_txt += f"📅 Yᴇᴀʀ : {years}\n"
+                if years and years != "N/A": metadata_txt += f"📅 Year: {years}\n"
 
-                metadata_block = f"<b><blockquote>{metadata_txt.strip()}</blockquote></b>\n" if metadata_txt else ""
+                metadata_block = f"<b>{metadata_txt}</b>" if metadata_txt else ""
 
                 caption_parts = {
-                    'title': f"<b><blockquote>🍿 {clean_title(movie_name)} ❞</blockquote></b>\n\n",
+                    'title': f"<b>📼 Movie: {clean_title(movie_name)}</b>\n",
                     'metadata': metadata_block,
-                    'episode': f"<b><blockquote>🎥 Qᴜᴀʟɪᴛʏ : {qualities or 'N/A'}</blockquote></b>\n",
-                    'audio_label': "🔊 Aᴜᴅɪᴏ : "
+                    'episode': f"<b>🎥 Quality: {qualities or 'N/A'}</b>\n",
+                    'audio_label': "🔊 Audio: "
                 }
 
                 buttons = []
@@ -558,7 +551,7 @@ async def process_post(client: Bot, message: Message, target_chat_id: int):
 
                 caption = caption_parts['title'] + caption_parts['metadata'] + caption_parts['episode']
                 if audios:
-                    caption += f"<b><blockquote>{caption_parts['audio_label']}{audios} ❞</blockquote></b>"
+                    caption += f"<b>{caption_parts['audio_label']}{audios}</b>"
 
                 try:
                     await client.send_photo(
@@ -630,7 +623,7 @@ async def anime_done_callback(client: Bot, query: CallbackQuery):
     if 'episode' in caption_parts:
         caption += caption_parts['episode']
     if audios:
-        caption += f"<b><blockquote>{caption_parts['audio_label']}{audios} ❞</blockquote></b>"
+        caption += f"<b>{caption_parts['audio_label']}{audios}</b>"
 
     try:
         await client.send_photo(

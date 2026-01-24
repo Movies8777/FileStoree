@@ -225,19 +225,28 @@ async def process_post(client: Bot, message: Message, target_chat_id: int):
 
             is_multi = any(re.search(r'multi|dual', src, re.IGNORECASE) for src in all_metadata_sources)
 
-            # Caption Construction
-            missing_txt = f"<b><blockquote>⚠️ Mɪssɪɴɢ : {', '.join([f'E{i:02d}' for i in missing_eps])}</blockquote></b>\n" if missing_eps else ""
+            # Stop if missing
+            if missing_eps:
+                await search_msg.edit(f"<b>❌ Cannot post! Some episodes are missing:</b>\n\n<code>{', '.join([f'E{i:02d}' for i in missing_eps])}</code>\n\nPlease upload them first.")
+                return
+
+            # Metadata block without N/A
+            metadata_txt = ""
+            if genre and genre != "N/A": metadata_txt += f"🎭 Gᴇɴʀᴇ : {genre}\n"
+            if rating and rating != "N/A": metadata_txt += f"🌟 Rᴀᴛɪɴɢ : {rating}\n"
+            if years and years != "N/A": metadata_txt += f"📅 Yᴇᴀʀ : {years}\n"
+
+            metadata_block = f"<b><blockquote>{metadata_txt.strip()}</blockquote></b>\n" if metadata_txt else ""
+            ep_range = f"{start_ep_tag} - {end_ep_tag}" if start_ep != end_ep else start_ep_tag
+
             caption_parts = {
-                'title': f"<b><blockquote>✨ {clean_title(series_name)} {season_tag}</blockquote>\n",
-                'metadata': f"<b><blockquote>🎭 Gᴇɴʀᴇ : {genre or 'N/A'}\n🌟 Rᴀᴛɪɴɢ : {rating or 'N/A'}\n📅 Yᴇᴀʀ : {years or 'N/A'}</blockquote>\n",
-                'episode': f"<b><blockquote>🔢 Eᴘɪsᴏᴅᴇ : {start_ep_tag} ᴛᴏ {end_ep_tag}\n🎥 Qᴜᴀʟɪᴛʏ : {qualities or 'N/A'}</blockquote>\n",
-                'missing': missing_txt,
+                'title': f"<b><blockquote>✨ {clean_title(series_name)}</blockquote></b>\n\n",
+                'metadata': metadata_block,
+                'episode': f"<b><blockquote>    Sᴇᴀsᴏɴ : {season_tag}\n🔢 Eᴘɪsᴏᴅᴇ : {ep_range}\n🎥 Qᴜᴀʟɪᴛʏ : {qualities or 'N/A'}</blockquote></b>\n",
                 'audio_label': "🔊 Aᴜᴅɪᴏ : "
             }
 
             buttons = []
-            if missing_eps:
-                buttons.append([InlineKeyboardButton("⚠️ Mɪssɪɴɢ Eᴘɪsᴏᴅᴇs", callback_data=f"missing_eps:{','.join(map(str, missing_eps))}")])
 
             if len(ep_res_groups) > 1:
                 # Multiple items: Show quality buttons
@@ -288,7 +297,7 @@ async def process_post(client: Bot, message: Message, target_chat_id: int):
                 )
 
             # Normal Posting
-            caption = caption_parts['title'] + caption_parts['metadata'] + caption_parts['episode'] + caption_parts['missing']
+            caption = caption_parts['title'] + caption_parts['metadata'] + caption_parts['episode']
             if audios:
                 caption += f"<b><blockquote>{caption_parts['audio_label']}{audios}</blockquote></b>"
 
@@ -383,18 +392,27 @@ async def process_post(client: Bot, message: Message, target_chat_id: int):
                 is_multi = any(re.search(r'multi|dual', src, re.IGNORECASE) for src in all_metadata_sources)
 
                 season_info = f"{start_str} - {end_str}" if start_str != end_str else start_str
-                missing_txt = f"<b><blockquote>⚠️ Mɪssɪɴɢ : {', '.join([f'S{i:02d}' for i in missing_seasons])}</blockquote></b>\n" if missing_seasons else ""
+
+                if missing_seasons:
+                    await search_msg.edit(f"<b>❌ Cannot post! Some seasons are missing:</b>\n\n<code>{', '.join([f'S{i:02d}' for i in missing_seasons])}</code>\n\nPlease upload them first.")
+                    return
+
+                # Metadata block without N/A
+                metadata_txt = ""
+                if genre and genre != "N/A": metadata_txt += f"🎭 Gᴇɴʀᴇ : {genre}\n"
+                if rating and rating != "N/A": metadata_txt += f"🌟 Rᴀᴛɪɴɢ : {rating}\n"
+                if years and years != "N/A": metadata_txt += f"📅 Yᴇᴀʀ : {years}\n"
+
+                metadata_block = f"<b><blockquote>{metadata_txt.strip()}</blockquote></b>\n" if metadata_txt else ""
+
                 caption_parts = {
-                    'title': f"<b><blockquote>✨ {clean_title(series_name)} {season_info}</blockquote>\n",
-                    'metadata': f"<b><blockquote>🎭 Gᴇɴʀᴇ : {genre or 'N/A'}\n🌟 Rᴀᴛɪɴɢ : {rating or 'N/A'}\n📅 Yᴇᴀʀ : {years or 'N/A'}</blockquote>\n",
-                    'episode': f"<b><blockquote>🎥 Qᴜᴀʟɪᴛʏ : {qualities or 'N/A'}</blockquote>\n",
-                    'missing': missing_txt,
+                    'title': f"<b><blockquote>✨ {clean_title(series_name)}</blockquote></b>\n\n",
+                    'metadata': metadata_block,
+                    'episode': f"<b><blockquote>    Sᴇᴀsᴏɴ : {season_info}\n🎥 Qᴜᴀʟɪᴛʏ : {qualities or 'N/A'}</blockquote></b>\n",
                     'audio_label': "🔊 Aᴜᴅɪᴏ : "
                 }
 
                 buttons = []
-                if missing_seasons:
-                    buttons.append([InlineKeyboardButton("⚠️ Mɪssɪɴɢ Sᴇᴀsᴏɴs", callback_data=f"missing_seasons:{','.join(map(str, missing_seasons))}")])
 
                 def q_sort(q):
                     res_match = re.search(r'(\d{3,4})', q)
@@ -433,7 +451,7 @@ async def process_post(client: Bot, message: Message, target_chat_id: int):
                         reply_markup=get_audio_selection_markup(post_id, [])
                     )
 
-                caption = caption_parts['title'] + caption_parts['metadata'] + caption_parts['episode'] + caption_parts['missing']
+                caption = caption_parts['title'] + caption_parts['metadata'] + caption_parts['episode']
                 if audios:
                     caption += f"<b><blockquote>{caption_parts['audio_label']}{audios}</blockquote></b>"
 
@@ -494,10 +512,18 @@ async def process_post(client: Bot, message: Message, target_chat_id: int):
 
                 is_multi = any(re.search(r'multi|dual', src, re.IGNORECASE) for src in all_metadata_sources)
 
+                # Metadata block without N/A
+                metadata_txt = ""
+                if genre and genre != "N/A": metadata_txt += f"🎭 Gᴇɴʀᴇ : {genre}\n"
+                if rating and rating != "N/A": metadata_txt += f"🌟 Rᴀᴛɪɴɢ : {rating}\n"
+                if years and years != "N/A": metadata_txt += f"📅 Yᴇᴀʀ : {years}\n"
+
+                metadata_block = f"<b><blockquote>{metadata_txt.strip()}</blockquote></b>\n" if metadata_txt else ""
+
                 caption_parts = {
-                    'title': f"<b><blockquote>🎬 {clean_title(movie_name)}</blockquote>\n",
-                    'metadata': f"<b><blockquote>🎭 Gᴇɴʀᴇ : {genre or 'N/A'}\n🌟 Rᴀᴛɪɴɢ : {rating or 'N/A'}\n📅 Yᴇᴀʀ : {years or 'N/A'}</blockquote>\n",
-                    'episode': f"<b><blockquote>🎥 Qᴜᴀʟɪᴛʏ : {qualities or 'N/A'}</blockquote>\n",
+                    'title': f"<b><blockquote>🎬 {clean_title(movie_name)}</blockquote></b>\n\n",
+                    'metadata': metadata_block,
+                    'episode': f"<b><blockquote>🎥 Qᴜᴀʟɪᴛʏ : {qualities or 'N/A'}</blockquote></b>\n",
                     'audio_label': "🔊 Aᴜᴅɪᴏ : "
                 }
 
@@ -604,8 +630,6 @@ async def anime_done_callback(client: Bot, query: CallbackQuery):
         caption += caption_parts['metadata']
     if 'episode' in caption_parts:
         caption += caption_parts['episode']
-    if 'missing' in caption_parts:
-        caption += caption_parts['missing']
     if audios:
         caption += f"<b><blockquote>{caption_parts['audio_label']}{audios}</blockquote></b>"
 

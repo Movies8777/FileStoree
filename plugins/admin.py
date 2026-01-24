@@ -159,7 +159,7 @@ async def get_stats(client: Client, message: Message):
     total_ongoing = await db.total_ongoing_count()
 
     stats_msg = (
-        "<b><blockquote>📊 Bᴏᴛ Sᴛᴀᴛɪsᴛɪᴄs\n"
+        "<b><blockquote>📊 Bᴏᴛ Sᴛᴀᴛɪsᴛɪᴄs      ❞\n"
         "━━━━━━━━━━━━━━━━━━━━━━\n"
         f"📂 Tᴏᴛᴀʟ Fɪʟᴇs : {total_files}\n"
         f"👤 Tᴏᴛᴀʟ Usᴇʀs : {total_users}\n"

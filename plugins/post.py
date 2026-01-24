@@ -27,9 +27,8 @@ def extract_quality(file_names):
 
         # Standardize source names
         if source:
-            if source in ["WEBRIP", "WEB-RIP", "WEB-DL", "WEBDL", "WEB DL", "WEB"]:
-                source = "" # Remove WEB-DL and variants as requested
-            elif source in ["BLURAY", "BLU-RAY"]: source = "BluRay"
+            if source in ["WEBRIP", "WEB-RIP", "WEB-DL", "WEBDL", "WEB DL", "WEB", "TS", "BLURAY", "BLU-RAY"]:
+                source = "" # Remove WEB-DL, TS, Bluray and variants as requested
             elif source in ["BRRIP", "BDRIP"]: source = "BRRip"
             elif source in ["HDRIP"]: source = "HDRip"
             elif source in ["DVDRIP"]: source = "DVDRip"
@@ -195,11 +194,11 @@ async def process_post(client: Bot, message: Message, target_chat_id: int):
 
                 # Extract quality for this specific file
                 res_m = re.search(r'(\d{3,4}p|4[kK])', file_name, re.IGNORECASE)
-                src_m = re.search(r'(Bluray|WEB-DL|Webrip|HDRip|DVDRip|BDRip|WEB)', file_name, re.IGNORECASE)
+                src_m = re.search(r'(Bluray|Blu-ray|WEB-DL|Webrip|HDRip|DVDRip|BDRip|WEB|TS)', file_name, re.IGNORECASE)
 
                 res = res_m.group(1).lower() if res_m else ""
                 src = src_m.group(1).upper() if src_m else ""
-                if src in ["WEB-DL", "WEBDL", "WEB", "WEBRIP"]:
+                if src in ["WEB-DL", "WEBDL", "WEB", "WEBRIP", "TS", "BLURAY", "BLU-RAY"]:
                     src = ""
                 label = f"{res} {src}".strip() or "HDR"
 
@@ -240,9 +239,9 @@ async def process_post(client: Bot, message: Message, target_chat_id: int):
             ep_range = f"{start_ep_tag} - {end_ep_tag}" if start_ep != end_ep else start_ep_tag
 
             caption_parts = {
-                'title': f"<b><blockquote>✨ {clean_title(series_name)}</blockquote></b>\n\n",
+                'title': f"<b><blockquote>✨ {clean_title(series_name)} ❞</blockquote></b>\n\n",
                 'metadata': metadata_block,
-                'episode': f"<b><blockquote>    Sᴇᴀsᴏɴ : {season_tag}\n🔢 Eᴘɪsᴏᴅᴇ : {ep_range}\n🎥 Qᴜᴀʟɪᴛʏ : {qualities or 'N/A'}</blockquote></b>\n",
+                'episode': f"<b><blockquote>    Sᴇᴀsᴏɴ : {season_tag}          ❞\n🔢 Eᴘɪsᴏᴅᴇ : {ep_range}\n🎥 Qᴜᴀʟɪᴛʏ : {qualities or 'N/A'}</blockquote></b>\n",
                 'audio_label': "🔊 Aᴜᴅɪᴏ : "
             }
 
@@ -299,7 +298,7 @@ async def process_post(client: Bot, message: Message, target_chat_id: int):
             # Normal Posting
             caption = caption_parts['title'] + caption_parts['metadata'] + caption_parts['episode']
             if audios:
-                caption += f"<b><blockquote>{caption_parts['audio_label']}{audios}</blockquote></b>"
+                caption += f"<b><blockquote>{caption_parts['audio_label']}{audios} ❞</blockquote></b>"
 
             try:
                 await client.send_photo(
@@ -362,11 +361,11 @@ async def process_post(client: Bot, message: Message, target_chat_id: int):
                         ep_res_groups[tag_val] = {}
 
                     res_m = re.search(r'(\d{3,4}p|4[kK])', file_name, re.IGNORECASE)
-                    src_m = re.search(r'(Bluray|WEB-DL|Webrip|HDRip|DVDRip|BDRip|WEB)', file_name, re.IGNORECASE)
+                    src_m = re.search(r'(Bluray|Blu-ray|WEB-DL|Webrip|HDRip|DVDRip|BDRip|WEB|TS)', file_name, re.IGNORECASE)
 
                     res = res_m.group(1).lower() if res_m else ""
                     src = src_m.group(1).upper() if src_m else ""
-                    if src in ["WEB-DL", "WEBDL", "WEB", "WEBRIP"]:
+                    if src in ["WEB-DL", "WEBDL", "WEB", "WEBRIP", "TS", "BLURAY", "BLU-RAY"]:
                         src = ""
                     label = f"{res} {src}".strip() or "HDR"
 
@@ -406,9 +405,9 @@ async def process_post(client: Bot, message: Message, target_chat_id: int):
                 metadata_block = f"<b><blockquote>{metadata_txt.strip()}</blockquote></b>\n" if metadata_txt else ""
 
                 caption_parts = {
-                    'title': f"<b><blockquote>✨ {clean_title(series_name)}</blockquote></b>\n\n",
+                    'title': f"<b><blockquote>✨ {clean_title(series_name)} ❞</blockquote></b>\n\n",
                     'metadata': metadata_block,
-                    'episode': f"<b><blockquote>    Sᴇᴀsᴏɴ : {season_info}\n🎥 Qᴜᴀʟɪᴛʏ : {qualities or 'N/A'}</blockquote></b>\n",
+                    'episode': f"<b><blockquote>    Sᴇᴀsᴏɴ : {season_info}          ❞\n🎥 Qᴜᴀʟɪᴛʏ : {qualities or 'N/A'}</blockquote></b>\n",
                     'audio_label': "🔊 Aᴜᴅɪᴏ : "
                 }
 
@@ -453,7 +452,7 @@ async def process_post(client: Bot, message: Message, target_chat_id: int):
 
                 caption = caption_parts['title'] + caption_parts['metadata'] + caption_parts['episode']
                 if audios:
-                    caption += f"<b><blockquote>{caption_parts['audio_label']}{audios}</blockquote></b>"
+                    caption += f"<b><blockquote>{caption_parts['audio_label']}{audios} ❞</blockquote></b>"
 
                 try:
                     await client.send_photo(
@@ -487,11 +486,11 @@ async def process_post(client: Bot, message: Message, target_chat_id: int):
                 res_groups = {}
                 for file in files:
                     res_match = re.search(r'(\d{3,4}p|4[kK])', file['file_name'], re.IGNORECASE)
-                    src_m = re.search(r'(Bluray|WEB-DL|Webrip|HDRip|DVDRip|BDRip|WEB)', file['file_name'], re.IGNORECASE)
+                    src_m = re.search(r'(Bluray|Blu-ray|WEB-DL|Webrip|HDRip|DVDRip|BDRip|WEB|TS)', file['file_name'], re.IGNORECASE)
 
                     res = res_match.group(1).lower() if res_match else ""
                     src = src_m.group(1).upper() if src_m else ""
-                    if src in ["WEB-DL", "WEBDL", "WEB", "WEBRIP"]:
+                    if src in ["WEB-DL", "WEBDL", "WEB", "WEBRIP", "TS", "BLURAY", "BLU-RAY"]:
                         src = ""
                     label = f"{res} {src}".strip() or "HDR"
 
@@ -521,7 +520,7 @@ async def process_post(client: Bot, message: Message, target_chat_id: int):
                 metadata_block = f"<b><blockquote>{metadata_txt.strip()}</blockquote></b>\n" if metadata_txt else ""
 
                 caption_parts = {
-                    'title': f"<b><blockquote>🎬 {clean_title(movie_name)}</blockquote></b>\n\n",
+                    'title': f"<b><blockquote>🍿 {clean_title(movie_name)} ❞</blockquote></b>\n\n",
                     'metadata': metadata_block,
                     'episode': f"<b><blockquote>🎥 Qᴜᴀʟɪᴛʏ : {qualities or 'N/A'}</blockquote></b>\n",
                     'audio_label': "🔊 Aᴜᴅɪᴏ : "
@@ -559,7 +558,7 @@ async def process_post(client: Bot, message: Message, target_chat_id: int):
 
                 caption = caption_parts['title'] + caption_parts['metadata'] + caption_parts['episode']
                 if audios:
-                    caption += f"<b><blockquote>{caption_parts['audio_label']}{audios}</blockquote></b>"
+                    caption += f"<b><blockquote>{caption_parts['audio_label']}{audios} ❞</blockquote></b>"
 
                 try:
                     await client.send_photo(
@@ -631,7 +630,7 @@ async def anime_done_callback(client: Bot, query: CallbackQuery):
     if 'episode' in caption_parts:
         caption += caption_parts['episode']
     if audios:
-        caption += f"<b><blockquote>{caption_parts['audio_label']}{audios}</blockquote></b>"
+        caption += f"<b><blockquote>{caption_parts['audio_label']}{audios} ❞</blockquote></b>"
 
     try:
         await client.send_photo(

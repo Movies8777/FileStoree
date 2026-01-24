@@ -269,7 +269,7 @@ def clean_title(title):
         r'HDCAM', r'S-Print', r'Pre-DVDRip', r'TS', r'HC', r'WEB', r'HDTV', r'60fps'
     ]
     for tag in tags:
-        title = re.sub(tag, '', title, flags=re.IGNORECASE)
+        title = re.sub(rf'\b{tag}\b', '', title, flags=re.IGNORECASE)
 
     # Strip year (19xx or 20xx)
     title = re.sub(r'\(?(19|20)\d{2}\)?', '', title)

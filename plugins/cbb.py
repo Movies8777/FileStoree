@@ -7,6 +7,7 @@
 #
 # All rights reserved.
 
+import random
 from pyrogram import Client 
 from bot import Bot
 from config import *
@@ -99,10 +100,10 @@ async def cb_handler(client: Bot, query: CallbackQuery):
                 await query.message.edit_caption(caption=caption, reply_markup=reply_markup)
             except:
                 await query.message.delete()
-                await client.send_photo(chat_id=query.message.chat.id, photo=START_PIC, caption=caption, reply_markup=reply_markup)
+                await client.send_photo(chat_id=query.message.chat.id, photo=random.choice(START_PIC), caption=caption, reply_markup=reply_markup)
         else:
             await query.message.delete()
-            await client.send_photo(chat_id=query.message.chat.id, photo=START_PIC, caption=caption, reply_markup=reply_markup)
+            await client.send_photo(chat_id=query.message.chat.id, photo=random.choice(START_PIC), caption=caption, reply_markup=reply_markup)
 
     elif data == "stats":
         if not await is_admin(query.from_user.id):

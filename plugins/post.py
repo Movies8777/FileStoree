@@ -236,8 +236,13 @@ async def process_post(client: Bot, message: Message, target_chat_id: int):
             metadata_block = ""
             ep_range = f"{start_ep_tag} to {end_ep_tag}" if start_ep != end_ep else start_ep_tag
 
+            if target_chat_id == ANIME_CHANNEL_ID:
+                title_text = f"<b>📼 Series: {clean_title(series_name)}\n{season_tag}</b>\n"
+            else:
+                title_text = f"<b>📼 Series: {clean_title(series_name)} {season_tag}</b>\n"
+
             caption_parts = {
-                'title': f"<b>📼 Series: {clean_title(series_name)} {season_tag}</b>\n",
+                'title': title_text,
                 'metadata': metadata_block,
                 'episode': f"<b>🔢 Episode: {ep_range}\n🎥 Quality: {qualities or 'N/A'}</b>\n",
                 'audio_label': "🔊 Audio: "
@@ -399,8 +404,13 @@ async def process_post(client: Bot, message: Message, target_chat_id: int):
 
                 metadata_block = ""
 
+                if target_chat_id == ANIME_CHANNEL_ID:
+                    title_text = f"<b>\b\bSeries: {clean_title(series_name)}\n{season_info}</b>\n"
+                else:
+                    title_text = f"<b>\b\bSeries: {clean_title(series_name)} {season_info}</b>\n"
+
                 caption_parts = {
-                    'title': f"<b>📼 Series: {clean_title(series_name)} {season_info}</b>\n",
+                    'title': title_text,
                     'metadata': metadata_block,
                     'episode': f"<b>🎥 Quality: {qualities or 'N/A'}</b>\n",
                     'audio_label': "🔊 Audio: "

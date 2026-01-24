@@ -253,7 +253,7 @@ async def start_command(client: Client, message: Message):
         )
 
         await message.reply_photo(
-            photo=START_PIC,
+            photo=random.choice(START_PIC),
             caption=caption,
             reply_markup=reply_markup,
             message_effect_id=5104841245755180586
@@ -322,7 +322,7 @@ async def not_joined(client: Client, message: Message):
             pass
 
         await message.reply_photo(
-            photo=FORCE_PIC,
+            photo=random.choice(FORCE_PIC),
             caption=FORCE_MSG.format(
                 first=message.from_user.first_name,
                 last=message.from_user.last_name,

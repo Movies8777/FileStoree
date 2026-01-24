@@ -41,8 +41,17 @@ FSUB_LINK_EXPIRY = int(os.getenv("FSUB_LINK_EXPIRY", "120"))  # 0 means no expir
 BAN_SUPPORT = os.environ.get("BAN_SUPPORT", "https://t.me/Spicylinebun")
 TG_BOT_WORKERS = int(os.environ.get("TG_BOT_WORKERS", "200"))
 #--------------------------------------------
-START_PIC = os.environ.get("START_PIC", "https://i.postimg.cc/4yCmP76g/chdyt.jpg")
-FORCE_PIC = os.environ.get("FORCE_PIC", "https://i.postimg.cc/mkwB9tVr/hmhg.jpg")
+PICS = [
+    "https://telegra.ph/file/97376df3c04de472cccc3-873dfc1d5592d694fe.jpg",
+    "https://telegra.ph/file/d117a93efede60cfa8a81-aaca7a369a3bd78970.jpg",
+    "https://telegra.ph/file/5b8e1dc3628c139f7456e-2ccfc2aa0b5424e718.jpg",
+    "https://telegra.ph/file/d44b7de61122b294d5b7d-550b006951ff0a8d9a.jpg",
+    "https://telegra.ph/file/0474481d047b322d51f79-80344c25004bf97ac5.jpg",
+    "https://telegra.ph/file/2e24340013cec1d97afe8-af2a6672cf4cb74086.jpg"
+]
+
+START_PIC = os.environ.get("START_PIC", " ".join(PICS)).split()
+FORCE_PIC = os.environ.get("FORCE_PIC", " ".join(PICS)).split()
 
 #--------------------------------------------
 SHORTLINK_URL = os.environ.get("SHORTLINK_URL", "")
@@ -54,7 +63,7 @@ TUT_VID = os.environ.get("TUT_VID","https://t.me/HowToVerifyy")
 REDIRECT_DOMAIN = os.environ.get("REDIRECT_DOMAIN","https://urlmsk.onrender.com")
 #--------------------------------------------
 HELP_TXT = "<b><blockquote>ᴛʜɪs ɪs ᴀɴ ғɪʟᴇ ᴛᴏ ʟɪɴᴋ ʙᴏᴛ ᴡᴏʀᴋ ғᴏʀ @Spicylinebun\n\n❏ ʙᴏᴛ ᴄᴏᴍᴍᴀɴᴅs\n├/start : sᴛᴀʀᴛ ᴛʜᴇ ʙᴏᴛ\n├/about : ᴏᴜʀ Iɴғᴏʀᴍᴀᴛɪᴏɴ\n└/help : ʜᴇʟᴘ ʀᴇʟᴀᴛᴇᴅ ʙᴏᴛ\n\n sɪᴍᴘʟʏ ᴄʟɪᴄᴋ ᴏɴ ʟɪɴᴋ ᴀɴᴅ sᴛᴀʀᴛ ᴛʜᴇ ʙᴏᴛ ᴊᴏɪɴ ʙᴏᴛʜ ᴄʜᴀɴɴᴇʟs ᴀɴᴅ ᴛʀʏ ᴀɢᴀɪɴ ᴛʜᴀᴛs ɪᴛ.....!\n\n ᴅᴇᴠᴇʟᴏᴘᴇᴅ ʙʏ <a href=https://t.me/Spicylinebun>𝖣𝖾𝖺𝗍𝗁</a></blockquote></b>"
-ABOUT_TXT = "<b><blockquote>◈ ᴄʀᴇᴀᴛᴏʀ: <a href=https://t.me/Spicylinebun>𝖫𝗈𝗌𝗍</a>\n◈ ꜰᴏᴜɴᴅᴇʀ ᴏꜰ : <a href=https://t.me/+otXaE3-eu7MzNjU9>𝖫𝗈𝗌𝗍 ɴᴇᴛᴡᴏʀᴋ</a>\n◈ нєηαтєє ᴄʜᴀɴɴᴇʟ : <a href=https://t.me/+1epnsIzoCx43YTk1>нєηαтєє</a>\n◈ sᴇʀɪᴇs ᴄʜᴀɴɴᴇʟ : <a href=https://t.me/+Pf6-2PAsrAczMzQ1>ᴡᴇʙsᴇʀɪᴇs</a>\n◈ ᴅᴇᴠᴇʟᴏᴘᴇʀ : <a href=https://t.me/Goathunterr>♚𝖧υηтєʀ⚰️ </a></blockquote></b>"
+ABOUT_TXT = "<b><blockquote>◈ ᴄʀᴇᴀᴛᴏʀ: <a href=https://t.me/Spicylinebun>𝖫𝗈𝗌ᴛ</a>\n◈ ꜰᴏᴜɴᴅᴇʀ ᴏꜰ : <a href=https://t.me/+otXaE3-eu7MzNjU9>𝖫𝗈𝗌ᴛ ɴᴇᴛᴡᴏʀᴋ</a>\n◈ нєηαтєє ᴄʜᴀɴɴᴇʟ : <a href=https://t.me/+1epnsIzoCx43YTk1>нєηαтєє</a>\n◈ sᴇʀɪᴇs ᴄʜᴀɴɴᴇʟ : <a href=https://t.me/+Pf6-2PAsrAczMzQ1>ᴡᴇʙsᴇʀɪᴇs</a>\n◈ ᴅᴇᴠᴇʟᴏᴘᴇʀ : <a href=https://t.me/Goathunterr>♚𝖧υηтєʀ⚰️ </a></blockquote></b>"
 #--------------------------------------------
 #--------------------------------------------
 START_MSG = os.environ.get("START_MESSAGE", "<b>ʜᴇʟʟᴏ {first}\n\n<blockquote> ɪ ᴀᴍ ғɪʟᴇ sᴛᴏʀᴇ ʙᴏᴛ, ɪ ᴄᴀɴ sᴛᴏʀᴇ ᴘʀɪᴠᴀᴛᴇ ғɪʟᴇs ɪɴ sᴘᴇᴄɪғɪᴇᴅ ᴄʜᴀɴɴᴇʟ ᴀɴᴅ ᴏᴛʜᴇʀ ᴜsᴇʀs ᴄᴀɴ ᴀᴄᴄᴇss ɪᴛ ғʀᴏᴍ sᴘᴇᴄɪᴀʟ ʟɪɴᴋ.</blockquote></b>")
@@ -109,7 +118,7 @@ USER_REPLY_TEXT = "ʙᴀᴋᴋᴀ ! ʏᴏᴜ ᴀʀᴇ ɴᴏᴛ ᴍʏ ꜱᴇɴᴘ
 
 #==========================(BUY PREMIUM)====================#
 
-OWNER_TAG = os.environ.get("OWNER_TAG", "𝖫𝗈𝗌𝗍")
+OWNER_TAG = os.environ.get("OWNER_TAG", "𝖫𝗈𝗌ᴛ")
 UPI_ID = os.environ.get("UPI_ID", "")
 QR_PIC = os.environ.get("QR_PIC", "https://image2url.com/images/1765293368028-10fbfce0-7b20-456f-b9eb-cc09ea0fdb22.jpg")
 SCREENSHOT_URL = os.environ.get("SCREENSHOT_URL", f"t.me/Goathunterr")

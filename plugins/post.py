@@ -237,7 +237,7 @@ async def process_post(client: Bot, message: Message, target_chat_id: int):
             ep_range = f"{start_ep_tag} to {end_ep_tag}" if start_ep != end_ep else start_ep_tag
 
             if target_chat_id == ANIME_CHANNEL_ID:
-                title_text = f"<b>📼 Series: {clean_title(series_name)}\n{season_tag}</b>\n"
+                title_text = f"<b>📼 Series: {clean_title(series_name)}\n👀 Sᴇᴀsᴏɴ: {season_tag}</b>\n"
             else:
                 title_text = f"<b>📼 Series: {clean_title(series_name)} {season_tag}</b>\n"
 
@@ -405,7 +405,7 @@ async def process_post(client: Bot, message: Message, target_chat_id: int):
                 metadata_block = ""
 
                 if target_chat_id == ANIME_CHANNEL_ID:
-                    title_text = f"<b>\b\bSeries: {clean_title(series_name)}\n{season_info}</b>\n"
+                    title_text = f"<b>\b\bSeries: {clean_title(series_name)}\n👀 Sᴇᴀsᴏɴ; {season_info}</b>\n"
                 else:
                     title_text = f"<b>\b\bSeries: {clean_title(series_name)} {season_info}</b>\n"
 

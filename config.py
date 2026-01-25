@@ -84,6 +84,9 @@ CMD_TXT_1 = """<blockquote><b>» ʙᴏᴛ ᴍᴀɴᴀɢᴇᴍᴇɴᴛ:</b></bloc
 <b>› /add_admin :</b> ᴀᴅᴅ ᴀ ɴᴇᴡ ᴀᴅᴍɪɴ
 <b>› /deladmin :</b> ʀᴇᴍᴏᴠᴇ ᴀɴ ᴀᴅᴍɪɴ
 <b>› /admins :</b> ʟɪsᴛ ᴏғ ᴀʟʟ ᴀᴅᴍɪɴs
+<b>› /settings :</b> ᴏᴡɴᴇʀ sᴇᴛᴛɪɴɢs
+<b>› /set_url :</b> sᴇᴛ sʜᴏʀᴛʟɪɴᴋ ᴜʀʟ
+<b>› /set_api :</b> sᴇᴛ sʜᴏʀᴛʟɪɴᴋ ᴀᴘɪ
 <b>› /addpremium :</b> ᴀᴅᴅ ᴘʀᴇᴍɪᴜᴍ ᴜsᴇʀ
 <b>› /premium_users :</b> ʟɪsᴛ ᴏғ ᴘʀᴇᴍɪᴜᴍs
 <b>› /remove_premium :</b> ʀᴇᴍᴏᴠᴇ ᴘʀᴇᴍɪᴜᴍ

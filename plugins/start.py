@@ -68,13 +68,14 @@ async def start_command(client: Client, message: Message):
         )
 
     FILE_AUTO_DELETE = await db.get_del_timer()
+    settings = await db.get_settings()
     text = message.text
 
     if len(text) > 7:
         verify_status = await db.get_verify_status(id)
 
         # Token expiry
-        if (SHORTLINK_URL or SHORTLINK_API):
+        if (settings['is_shortlink']):
             if verify_status['is_verified'] and VERIFY_EXPIRE < (time.time() - verify_status['verified_time']):
                 await db.update_verify_status(user_id, is_verified=False, verify_token="", original_start="")
 
@@ -107,7 +108,7 @@ async def start_command(client: Client, message: Message):
 
         # === NOT VERIFIED & NOT PREMIUM → SHOW SHORTLINK ===
         if not verify_status['is_verified'] and not is_premium:
-            if SHORTLINK_URL and SHORTLINK_API:
+            if settings['is_shortlink']:
                 try:
                     original_cmd = text.split(" ", 1)[1]
                 except:
@@ -115,7 +116,7 @@ async def start_command(client: Client, message: Message):
 
                 token = ''.join(random.choices(string.ascii_letters + string.digits, k=10))
                 verify_link = f"https://t.me/{client.username}?start=verify_{token}"
-                shortlink = await get_shortlink(SHORTLINK_URL, SHORTLINK_API, verify_link)
+                shortlink = await get_shortlink(settings['shortlink_url'], settings['shortlink_api'], verify_link)
                 masked_link = await wrap_with_redirect(shortlink)
                 await db.update_verify_status(
                     user_id,
@@ -186,7 +187,7 @@ async def start_command(client: Client, message: Message):
                     caption=caption,
                     parse_mode=ParseMode.HTML,
                     reply_markup=reply_markup,
-                    protect_content=PROTECT_CONTENT
+                    protect_content=settings['protect_content']
                 )
                 codeflix_msgs.append(copied_msg)
             except FloodWait as e:
@@ -196,7 +197,7 @@ async def start_command(client: Client, message: Message):
                     caption=caption,
                     parse_mode=ParseMode.HTML,
                     reply_markup=reply_markup,
-                    protect_content=PROTECT_CONTENT
+                    protect_content=settings['protect_content']
                 )
                 codeflix_msgs.append(copied_msg)
             except:
@@ -473,3 +474,42 @@ async def list_premium_users_command(client, message):
 async def total_verify_count_cmd(client, message: Message):
     total = await db.get_total_verify_count()
     await message.reply_text(f"Tᴏᴛᴀʟ ᴠᴇʀɪғɪᴇᴅ ᴛᴏᴋᴇɴs ᴛᴏᴅᴀʏ: <b>{total}</b>")
+
+
+@Bot.on_message(filters.command('settings') & filters.user(OWNER_ID) & filters.private)
+async def owner_settings(client: Client, message: Message):
+    settings = await db.get_settings()
+    text = (
+        "<b>🛠 Oᴡɴᴇʀ Sᴇᴛᴛɪɴɢs</b>\n\n"
+        f"<b>Sʜᴏʀᴛʟɪɴᴋ Uʀʟ:</b> <code>{settings['shortlink_url']}</code>\n"
+        f"<b>Sʜᴏʀᴛʟɪɴᴋ Aᴘɪ:</b> <code>{settings['shortlink_api']}</code>\n"
+        f"<b>Sʜᴏʀᴛʟɪɴᴋ Sᴛᴀᴛᴜs:</b> {'ON' if settings['is_shortlink'] else 'OFF'}\n"
+        f"<b>Pʀᴏᴛᴇᴄᴛ Cᴏɴᴛᴇɴᴛ:</b> {'ON' if settings['protect_content'] else 'OFF'}\n\n"
+        "<i>Use /set_url to change URL and /set_api to change API.</i>"
+    )
+    buttons = [
+        [
+            InlineKeyboardButton(f"Sʜᴏʀᴛʟɪɴᴋ: {'ON' if settings['is_shortlink'] else 'OFF'}", callback_data="toggle_shortlink"),
+            InlineKeyboardButton(f"Pʀᴏᴛᴇᴄᴛ: {'ON' if settings['protect_content'] else 'OFF'}", callback_data="toggle_protect")
+        ],
+        [
+            InlineKeyboardButton("Cʟᴏsᴇ", callback_data="close")
+        ]
+    ]
+    await message.reply_text(text, reply_markup=InlineKeyboardMarkup(buttons))
+
+@Bot.on_message(filters.command('set_url') & filters.user(OWNER_ID) & filters.private)
+async def set_shortlink_url(client: Client, message: Message):
+    if len(message.command) < 2:
+        return await message.reply_text("<b>Usage:</b> <code>/set_url inshorturl.com</code>")
+    url = message.command[1]
+    await db.update_setting('shortlink_url', url)
+    await message.reply_text(f"<b>✅ Shortlink URL updated to:</b> <code>{url}</code>")
+
+@Bot.on_message(filters.command('set_api') & filters.user(OWNER_ID) & filters.private)
+async def set_shortlink_api(client: Client, message: Message):
+    if len(message.command) < 2:
+        return await message.reply_text("<b>Usage:</b> <code>/set_api YOUR_API_KEY</code>")
+    api = message.command[1]
+    await db.update_setting('shortlink_api', api)
+    await message.reply_text(f"<b>✅ Shortlink API updated to:</b> <code>{api}</code>")

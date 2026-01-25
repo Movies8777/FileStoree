@@ -51,6 +51,7 @@ class Rohit:
         self.rqst_fsub_Channel_data = self.database['request_forcesub_channel']
         self.file_data = self.database['files']
         self.ongoing_data = self.database['ongoing']
+        self.settings_data = self.database['settings']
         
 
 
@@ -348,6 +349,37 @@ class Rohit:
 
     async def total_ongoing_count(self):
         return await self.ongoing_data.count_documents({})
+
+    # SETTINGS MANAGEMENT
+    async def get_settings(self):
+        from config import SHORTLINK_URL, SHORTLINK_API, PROTECT_CONTENT
+        default_settings = {
+            'shortlink_url': SHORTLINK_URL,
+            'shortlink_api': SHORTLINK_API,
+            'is_shortlink': True if (SHORTLINK_URL and SHORTLINK_API) else False,
+            'protect_content': PROTECT_CONTENT
+        }
+
+        settings = await self.settings_data.find_one({'_id': 'global_settings'})
+        if not settings:
+            await self.settings_data.insert_one({'_id': 'global_settings', 'value': default_settings})
+            return default_settings
+
+        # Merge saved settings with defaults to ensure all keys exist
+        saved_values = settings.get('value', {})
+        for key, val in default_settings.items():
+            if key not in saved_values:
+                saved_values[key] = val
+        return saved_values
+
+    async def update_setting(self, key, value):
+        settings = await self.get_settings()
+        settings[key] = value
+        await self.settings_data.update_one(
+            {'_id': 'global_settings'},
+            {'$set': {'value': settings}},
+            upsert=True
+        )
 
 
 db = Rohit(DB_URI, DB_NAME)

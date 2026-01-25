@@ -525,6 +525,64 @@ async def cb_handler(client: Bot, query: CallbackQuery):
             reply_markup=InlineKeyboardMarkup(buttons)
         )
 
+    elif data == "toggle_shortlink":
+        if query.from_user.id != OWNER_ID:
+            return await query.answer("Only Owner can access this!", show_alert=True)
+        settings = await db.get_settings()
+        new_status = not settings['is_shortlink']
+        await db.update_setting('is_shortlink', new_status)
+        await query.answer(f"Shortlink status set to {'ON' if new_status else 'OFF'}")
+
+        # Refresh the UI
+        settings = await db.get_settings()
+        text = (
+            "<b>🛠 Oᴡɴᴇʀ Sᴇᴛᴛɪɴɢs</b>\n\n"
+            f"<b>Sʜᴏʀᴛʟɪɴᴋ Uʀʟ:</b> <code>{settings['shortlink_url']}</code>\n"
+            f"<b>Sʜᴏʀᴛʟɪɴᴋ Aᴘɪ:</b> <code>{settings['shortlink_api']}</code>\n"
+            f"<b>Sʜᴏʀᴛʟɪɴᴋ Sᴛᴀᴛᴜs:</b> {'ON' if settings['is_shortlink'] else 'OFF'}\n"
+            f"<b>Pʀᴏᴛᴇᴄᴛ Cᴏɴᴛᴇɴᴛ:</b> {'ON' if settings['protect_content'] else 'OFF'}\n\n"
+            "<i>Use /set_url to change URL and /set_api to change API.</i>"
+        )
+        buttons = [
+            [
+                InlineKeyboardButton(f"Sʜᴏʀᴛʟɪɴᴋ: {'ON' if settings['is_shortlink'] else 'OFF'}", callback_data="toggle_shortlink"),
+                InlineKeyboardButton(f"Pʀᴏᴛᴇᴄᴛ: {'ON' if settings['protect_content'] else 'OFF'}", callback_data="toggle_protect")
+            ],
+            [
+                InlineKeyboardButton("Cʟᴏsᴇ", callback_data="close")
+            ]
+        ]
+        await query.message.edit_text(text, reply_markup=InlineKeyboardMarkup(buttons))
+
+    elif data == "toggle_protect":
+        if query.from_user.id != OWNER_ID:
+            return await query.answer("Only Owner can access this!", show_alert=True)
+        settings = await db.get_settings()
+        new_status = not settings['protect_content']
+        await db.update_setting('protect_content', new_status)
+        await query.answer(f"Protect Content status set to {'ON' if new_status else 'OFF'}")
+
+        # Refresh the UI
+        settings = await db.get_settings()
+        text = (
+            "<b>🛠 Oᴡɴᴇʀ Sᴇᴛᴛɪɴɢs</b>\n\n"
+            f"<b>Sʜᴏʀᴛʟɪɴᴋ Uʀʟ:</b> <code>{settings['shortlink_url']}</code>\n"
+            f"<b>Sʜᴏʀᴛʟɪɴᴋ Aᴘɪ:</b> <code>{settings['shortlink_api']}</code>\n"
+            f"<b>Sʜᴏʀᴛʟɪɴᴋ Sᴛᴀᴛᴜs:</b> {'ON' if settings['is_shortlink'] else 'OFF'}\n"
+            f"<b>Pʀᴏᴛᴇᴄᴛ Cᴏɴᴛᴇɴᴛ:</b> {'ON' if settings['protect_content'] else 'OFF'}\n\n"
+            "<i>Use /set_url to change URL and /set_api to change API.</i>"
+        )
+        buttons = [
+            [
+                InlineKeyboardButton(f"Sʜᴏʀᴛʟɪɴᴋ: {'ON' if settings['is_shortlink'] else 'OFF'}", callback_data="toggle_shortlink"),
+                InlineKeyboardButton(f"Pʀᴏᴛᴇᴄᴛ: {'ON' if settings['protect_content'] else 'OFF'}", callback_data="toggle_protect")
+            ],
+            [
+                InlineKeyboardButton("Cʟᴏsᴇ", callback_data="close")
+            ]
+        ]
+        await query.message.edit_text(text, reply_markup=InlineKeyboardMarkup(buttons))
+
 
 # Don't Remove Credit @CodeFlix_Bots, @rohit_1888
 # Ask Doubt on telegram @CodeflixSupport

@@ -254,7 +254,7 @@ async def start_command(client: Client, message: Message):
         )
 
         await message.reply_photo(
-            photo=random.choice(START_PIC),
+            photo=START_PIC,
             caption=caption,
             reply_markup=reply_markup,
             message_effect_id=5104841245755180586
@@ -323,7 +323,7 @@ async def not_joined(client: Client, message: Message):
             pass
 
         await message.reply_photo(
-            photo=random.choice(FORCE_PIC),
+            photo=FORCE_PIC,
             caption=FORCE_MSG.format(
                 first=message.from_user.first_name,
                 last=message.from_user.last_name,
@@ -493,6 +493,7 @@ async def owner_settings(client: Client, message: Message):
             InlineKeyboardButton(f"Pʀᴏᴛᴇᴄᴛ: {'ON' if settings['protect_content'] else 'OFF'}", callback_data="toggle_protect")
         ],
         [
+            InlineKeyboardButton("Tᴇsᴛ Sʜᴏʀᴛʟɪɴᴋ", callback_data="test_shortlink"),
             InlineKeyboardButton("Cʟᴏsᴇ", callback_data="close")
         ]
     ]

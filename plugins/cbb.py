@@ -100,10 +100,10 @@ async def cb_handler(client: Bot, query: CallbackQuery):
                 await query.message.edit_caption(caption=caption, reply_markup=reply_markup)
             except:
                 await query.message.delete()
-                await client.send_photo(chat_id=query.message.chat.id, photo=random.choice(START_PIC), caption=caption, reply_markup=reply_markup)
+                await client.send_photo(chat_id=query.message.chat.id, photo=START_PIC, caption=caption, reply_markup=reply_markup)
         else:
             await query.message.delete()
-            await client.send_photo(chat_id=query.message.chat.id, photo=random.choice(START_PIC), caption=caption, reply_markup=reply_markup)
+            await client.send_photo(chat_id=query.message.chat.id, photo=START_PIC, caption=caption, reply_markup=reply_markup)
 
     elif data == "stats":
         if not await is_admin(query.from_user.id):
@@ -530,6 +530,10 @@ async def cb_handler(client: Bot, query: CallbackQuery):
             return await query.answer("Only Owner can access this!", show_alert=True)
         settings = await db.get_settings()
         new_status = not settings['is_shortlink']
+
+        if new_status and (not settings['shortlink_url'] or not settings['shortlink_api']):
+            return await query.answer("Please set Shortlink URL and API first!", show_alert=True)
+
         await db.update_setting('is_shortlink', new_status)
         await query.answer(f"Shortlink status set to {'ON' if new_status else 'OFF'}")
 
@@ -549,6 +553,7 @@ async def cb_handler(client: Bot, query: CallbackQuery):
                 InlineKeyboardButton(f"Pʀᴏᴛᴇᴄᴛ: {'ON' if settings['protect_content'] else 'OFF'}", callback_data="toggle_protect")
             ],
             [
+                InlineKeyboardButton("Tᴇsᴛ Sʜᴏʀᴛʟɪɴᴋ", callback_data="test_shortlink"),
                 InlineKeyboardButton("Cʟᴏsᴇ", callback_data="close")
             ]
         ]
@@ -578,10 +583,26 @@ async def cb_handler(client: Bot, query: CallbackQuery):
                 InlineKeyboardButton(f"Pʀᴏᴛᴇᴄᴛ: {'ON' if settings['protect_content'] else 'OFF'}", callback_data="toggle_protect")
             ],
             [
+                InlineKeyboardButton("Tᴇsᴛ Sʜᴏʀᴛʟɪɴᴋ", callback_data="test_shortlink"),
                 InlineKeyboardButton("Cʟᴏsᴇ", callback_data="close")
             ]
         ]
         await query.message.edit_text(text, reply_markup=InlineKeyboardMarkup(buttons))
+
+    elif data == "test_shortlink":
+        if query.from_user.id != OWNER_ID:
+            return await query.answer("Only Owner can access this!", show_alert=True)
+        settings = await db.get_settings()
+        if not settings['shortlink_url'] or not settings['shortlink_api']:
+            return await query.answer("Please set Shortlink URL and API first!", show_alert=True)
+
+        from helper_func import get_shortlink
+        try:
+            sample_link = "https://www.google.com"
+            short = await get_shortlink(settings['shortlink_url'], settings['shortlink_api'], sample_link)
+            await query.answer(f"Test Successful!\n{short}", show_alert=True)
+        except Exception as e:
+            await query.answer(f"Test Failed: {str(e)}", show_alert=True)
 
 
 # Don't Remove Credit @CodeFlix_Bots, @rohit_1888

@@ -12,6 +12,7 @@ logger = LOGGER(__name__)
 
 AUDIO_LANGUAGES = ['Hindi', 'English', 'Japanese', 'Tamil', 'Telugu', 'Malayalam', 'Kannada', 'Bengali', 'Marathi', 'Punjabi', 'ESubs']
 PENDING_ANIME_POSTS = {}
+PENDING_POSTS = {}
 
 def extract_quality(file_names):
     qualities = set()
@@ -117,13 +118,22 @@ def get_audio_selection_markup(post_id, selected_langs):
     rows.append([InlineKeyboardButton("✨ Fɪɴɪsʜ Pᴏsᴛ ✨", callback_data=f"anime_done:{post_id}")])
     return InlineKeyboardMarkup(rows)
 
-async def process_post(client: Bot, message: Message, target_chat_id: int):
-    cmd_text = message.text.split(None, 1)
-    if len(cmd_text) < 2:
-        cmd_name = message.command[0]
-        return await message.reply_text(f"<b>Usage:</b>\n\n<b>Movie:</b> /{cmd_name} {{movie_name}} {{poster_url}}\n<b>Series:</b> /{cmd_name} {{series_name}} S01 E01 to E08 {{poster_url}}")
-
-    full_query = cmd_text[1]
+async def process_post(client: Bot, message: Message, target_chat_id: int, selection_data: dict = None):
+    if selection_data:
+        full_query = selection_data['full_query']
+        poster_url = selection_data['poster_url']
+        chosen_title = selection_data['title']
+        chosen_season = selection_data.get('season')
+        chosen_year = selection_data.get('year')
+    else:
+        cmd_text = message.text.split(None, 1)
+        if len(cmd_text) < 2:
+            cmd_name = message.command[0]
+            return await message.reply_text(f"<b>Usage:</b>\n\n<b>Movie:</b> /{cmd_name} {{movie_name}} {{poster_url}}\n<b>Series:</b> /{cmd_name} {{series_name}} S01 E01 to E08 {{poster_url}}")
+        full_query = cmd_text[1]
+        chosen_title = None
+        chosen_season = None
+        chosen_year = None
 
     # Check for series formats
     # Format 1: name S01 E01 to E02 link
@@ -141,23 +151,23 @@ async def process_post(client: Bot, message: Message, target_chat_id: int):
             if series_match:
                 start_ep_tag = match.group(3).upper()
                 end_ep_tag = match.group(4).upper()
-                poster_url = match.group(5).strip()
+                if not selection_data: poster_url = match.group(5).strip()
                 start_ep = int(re.sub(r'\D', '', start_ep_tag))
                 end_ep = int(re.sub(r'\D', '', end_ep_tag))
             else:
                 start_ep_tag = match.group(3).upper()
                 end_ep_tag = start_ep_tag
-                poster_url = match.group(4).strip()
+                if not selection_data: poster_url = match.group(4).strip()
                 start_ep = int(re.sub(r'\D', '', start_ep_tag))
                 end_ep = start_ep
 
             if start_ep > end_ep:
                 return await message.reply_text("<b>Start episode cannot be greater than end episode!</b>")
 
-            search_msg = await message.reply_text(f"<b>Sᴇᴀʀᴄʜɪɴɢ ғᴏʀ {series_name} {season_tag} {start_ep_tag}-{end_ep_tag}...</b>")
+            search_msg = await (message.edit_text if selection_data else message.reply_text)(f"<b>Sᴇᴀʀᴄʜɪɴɢ ғᴏʀ {series_name} {season_tag} {start_ep_tag}-{end_ep_tag}...</b>")
 
             # Find files (Broader search for better accuracy and performance)
-            results = await db.find_file(f"{series_name} {season_tag}")
+            results = await db.find_file(f"{chosen_title or series_name} {chosen_season or season_tag}")
             if not results:
                 return await search_msg.edit("<b>Nᴏ ғɪʟᴇs ғᴏᴜɴᴅ ɪɴ ᴅᴀᴛᴀʙᴀsᴇ!</b>")
 
@@ -236,13 +246,11 @@ async def process_post(client: Bot, message: Message, target_chat_id: int):
             metadata_block = ""
             ep_range = f"{start_ep_tag} to {end_ep_tag}" if start_ep != end_ep else start_ep_tag
 
-            if target_chat_id == ANIME_CHANNEL_ID:
-                title_text = f"<b>📼 Series: {clean_title(series_name)}\n{season_tag}</b>\n"
-            else:
-                title_text = f"<b>📼 Series: {clean_title(series_name)} {season_tag}</b>\n"
+            title_text = f"<b>📼 Series: {clean_title(series_name)}</b>\n"
 
             caption_parts = {
                 'title': title_text,
+                'season': f"<b>Sᴇᴀsᴏɴ: {season_tag}</b>\n",
                 'metadata': metadata_block,
                 'episode': f"<b>🔢 Episode: {ep_range}\n🎥 Quality: {qualities or 'N/A'}</b>\n",
                 'audio_label': "🔊 Audio: "
@@ -299,7 +307,7 @@ async def process_post(client: Bot, message: Message, target_chat_id: int):
                 )
 
             # Normal Posting
-            caption = caption_parts['title'] + caption_parts['metadata'] + caption_parts['episode']
+            caption = caption_parts['title'] + caption_parts['season'] + caption_parts['metadata'] + caption_parts['episode']
             if audios:
                 caption += f"<b>{caption_parts['audio_label']}{audios}</b>"
 
@@ -330,18 +338,18 @@ async def process_post(client: Bot, message: Message, target_chat_id: int):
                 series_name = old_series_match.group(1).strip()
                 start_str = old_series_match.group(2).upper()
                 end_str = old_series_match.group(3).upper()
-                poster_url = old_series_match.group(4).strip()
+                if not selection_data: poster_url = old_series_match.group(4).strip()
 
                 start_val = int(start_str[1:])
                 end_val = int(end_str[1:])
 
-                search_msg = await message.reply_text(f"<b>Sᴇᴀʀᴄʜɪɴɢ ғᴏʀ {series_name} {start_str}-{end_str}...</b>")
+                search_msg = await (message.edit_text if selection_data else message.reply_text)(f"<b>Sᴇᴀʀᴄʜɪɴɢ ғᴏʀ {series_name} {start_str}-{end_str}...</b>")
 
                 all_files = []
                 found_seasons = set()
                 for val in range(start_val, end_val + 1):
                     tag = f"S{val:02d}"
-                    files = await db.find_file(f"{series_name} {tag}")
+                    files = await db.find_file(f"{chosen_title or series_name} {chosen_season or tag}")
                     if files:
                         found_seasons.add(val)
                         all_files.extend(files)
@@ -404,13 +412,11 @@ async def process_post(client: Bot, message: Message, target_chat_id: int):
 
                 metadata_block = ""
 
-                if target_chat_id == ANIME_CHANNEL_ID:
-                    title_text = f"<b>\b\bSeries: {clean_title(series_name)}\n{season_info}</b>\n"
-                else:
-                    title_text = f"<b>\b\bSeries: {clean_title(series_name)} {season_info}</b>\n"
+                title_text = f"<b>📼 Series: {clean_title(series_name)}</b>\n"
 
                 caption_parts = {
                     'title': title_text,
+                    'season': f"<b>Sᴇᴀsᴏɴ: {season_info}</b>\n",
                     'metadata': metadata_block,
                     'episode': f"<b>🎥 Quality: {qualities or 'N/A'}</b>\n",
                     'audio_label': "🔊 Audio: "
@@ -455,7 +461,7 @@ async def process_post(client: Bot, message: Message, target_chat_id: int):
                         reply_markup=get_audio_selection_markup(post_id, [])
                     )
 
-                caption = caption_parts['title'] + caption_parts['metadata'] + caption_parts['episode']
+                caption = caption_parts['title'] + caption_parts['season'] + caption_parts['metadata'] + caption_parts['episode']
                 if audios:
                     caption += f"<b>{caption_parts['audio_label']}{audios}</b>"
 
@@ -478,13 +484,16 @@ async def process_post(client: Bot, message: Message, target_chat_id: int):
         else:
             # Movie: /post {movie_name} {poster_url}
             try:
-                if " " not in full_query:
-                    return await message.reply_text("<b>Poster URL missing!</b>\nUse: /post {movie_name} {poster_url}")
+                if not selection_data:
+                    if " " not in full_query:
+                        return await message.reply_text("<b>Poster URL missing!</b>\nUse: /post {movie_name} {poster_url}")
+                    movie_name, poster_url = full_query.rsplit(None, 1)
+                else:
+                    movie_name = chosen_title
 
-                movie_name, poster_url = full_query.rsplit(None, 1)
-                search_msg = await message.reply_text(f"<b>Sᴇᴀʀᴄʜɪɴɢ ғᴏʀ {movie_name}...</b>")
+                search_msg = await (message.edit_text if selection_data else message.reply_text)(f"<b>Sᴇᴀʀᴄʜɪɴɢ ғᴏʀ {movie_name}...</b>")
 
-                files = await db.find_file(movie_name)
+                files = await db.find_file(f"{movie_name} {chosen_year or ''}")
                 if not files:
                     return await search_msg.edit("<b>Nᴏ ғɪʟᴇs ғᴏᴜɴᴅ ɪɴ ᴅᴀᴛᴀʙᴀsᴇ!</b>")
 
@@ -581,11 +590,105 @@ async def process_post(client: Bot, message: Message, target_chat_id: int):
 
 @Bot.on_message(filters.command("post") & admin)
 async def post_command(client: Bot, message: Message):
-    await process_post(client, message, POST_CHANNEL_ID)
+    await disambiguate_and_process(client, message, POST_CHANNEL_ID)
 
 @Bot.on_message(filters.command("animepost") & admin)
 async def anime_post_command(client: Bot, message: Message):
-    await process_post(client, message, ANIME_CHANNEL_ID)
+    await disambiguate_and_process(client, message, ANIME_CHANNEL_ID)
+
+async def disambiguate_and_process(client: Bot, message: Message, target_chat_id: int):
+    cmd_text = message.text.split(None, 1)
+    if len(cmd_text) < 2:
+        cmd_name = message.command[0]
+        return await message.reply_text(f"<b>Usage:</b>\n\n<b>Movie:</b> /{cmd_name} {{movie_name}} {{poster_url}}\n<b>Series:</b> /{cmd_name} {{series_name}} S01 E01 to E08 {{poster_url}}")
+
+    full_query = cmd_text[1]
+
+    # Try to extract the name for searching
+    # We'll search for whatever is before the poster URL or season tags
+    search_query = full_query
+    poster_url = ""
+
+    # Check if there's a URL at the end
+    url_match = re.search(r'(https?://\S+)\s*$', full_query)
+    if url_match:
+        poster_url = url_match.group(1)
+        search_query = full_query[:url_match.start()].strip()
+
+    # Remove season/episode tags from search query to find all available ones
+    clean_search = re.sub(r'\s+(S\d+|E\d+|to|EP\d+).+', '', search_query, flags=re.IGNORECASE).strip()
+
+    search_msg = await message.reply_text(f"<b>Sᴇᴀʀᴄʜɪɴɢ ғᴏʀ {clean_search}...</b>")
+    results = await db.find_file(clean_search)
+
+    if not results:
+        return await search_msg.edit(f"<b>Nᴏ ғɪʟᴇs ғᴏᴜɴᴅ ɪɴ ᴅᴀᴛᴀʙᴀsᴇ ғᴏʀ '{clean_search}'!</b>")
+
+    # Identify options: Group by Title + Season or Year
+    options = {} # {(Title, Season/Year): [files]}
+
+    for file in results:
+        title = clean_title(file['file_name'])
+
+        # Check for season
+        s_match = re.search(r'S(\d{2})', file['file_name'], re.IGNORECASE)
+        # Check for year
+        y_match = re.search(r'(19|20)\d{2}', file['file_name'])
+
+        tag = s_match.group(0).upper() if s_match else (y_match.group(0) if y_match else "N/A")
+        key = (title, tag)
+
+        if key not in options:
+            options[key] = []
+        options[key].append(file)
+
+    if len(options) > 1:
+        post_id = str(uuid.uuid4())[:8]
+        PENDING_POSTS[post_id] = {
+            'target_chat_id': target_chat_id,
+            'poster_url': poster_url,
+            'full_query': full_query,
+            'options': options
+        }
+
+        buttons = []
+        for i, (title, tag) in enumerate(options.keys()):
+            label = f"{title} ({tag})" if tag != "N/A" else title
+            buttons.append([InlineKeyboardButton(label, callback_data=f"select_post:{post_id}:{i}")])
+
+        buttons.append([InlineKeyboardButton("❌ Cᴀɴᴄᴇʟ", callback_data="close")])
+
+        await search_msg.edit(
+            f"<b>Mᴜʟᴛɪᴘʟᴇ ɪᴛᴇᴍs ғᴏᴜɴᴅ ғᴏʀ '{clean_search}'.\nPʟᴇᴀsᴇ sᴇʟᴇᴄᴛ ᴛʜᴇ ᴏɴᴇ ʏᴏᴜ ᴡᴀɴᴛ ᴛᴏ ᴘᴏsᴛ:</b>",
+            reply_markup=InlineKeyboardMarkup(buttons)
+        )
+    else:
+        # Single option, proceed
+        await search_msg.delete()
+        await process_post(client, message, target_chat_id)
+
+@Bot.on_callback_query(filters.regex(r'^select_post:'))
+async def select_post_callback(client: Bot, query: CallbackQuery):
+    _, post_id, idx = query.data.split(':')
+    idx = int(idx)
+
+    if post_id not in PENDING_POSTS:
+        return await query.answer("Session expired!", show_alert=True)
+
+    data = PENDING_POSTS.pop(post_id)
+    target_chat_id = data['target_chat_id']
+    options = list(data['options'].keys())
+    selected = options[idx]
+
+    selection_data = {
+        'full_query': data['full_query'],
+        'poster_url': data['poster_url'],
+        'title': selected[0],
+        'season': selected[1] if selected[1].startswith('S') else None,
+        'year': selected[1] if not selected[1].startswith('S') and selected[1] != "N/A" else None
+    }
+
+    await process_post(client, query.message, target_chat_id, selection_data)
 
 @Bot.on_callback_query(filters.regex(r'^anime_lang:'))
 async def anime_lang_callback(client: Bot, query: CallbackQuery):
@@ -628,6 +731,8 @@ async def anime_done_callback(client: Bot, query: CallbackQuery):
     audios = " - ".join(sorted_langs)
 
     caption = caption_parts['title']
+    if 'season' in caption_parts:
+        caption += caption_parts['season']
     if 'metadata' in caption_parts:
         caption += caption_parts['metadata']
     if 'episode' in caption_parts:

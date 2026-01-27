@@ -49,6 +49,7 @@ class Rohit:
         self.fsub_data = self.database['fsub']   
         self.rqst_fsub_data = self.database['request_forcesub']
         self.rqst_fsub_Channel_data = self.database['request_forcesub_channel']
+        self.file_data = self.database['files']
         
 
 
@@ -262,6 +263,32 @@ class Rohit:
         ]
         result = await self.sex_data.aggregate(pipeline).to_list(length=1)
         return result[0]["total"] if result else 0
+
+    # FILE INDEXING
+    async def add_file(self, file_name, file_size, file_type, file_id, msg_id):
+        file_dict = {
+            'file_name': file_name,
+            'file_size': file_size,
+            'file_type': file_type,
+            'file_id': file_id,
+            'msg_id': msg_id
+        }
+        # Check if already indexed (optional, but good for avoiding duplicates if re-indexing)
+        await self.file_data.update_one(
+            {'file_id': file_id},
+            {'$set': file_dict},
+            upsert=True
+        )
+
+    async def find_file(self, query):
+        # Basic regex search
+        cursor = self.file_data.find({
+            'file_name': {'$regex': query, '$options': 'i'}
+        })
+        return await cursor.to_list(length=100)
+
+    async def total_files(self):
+        return await self.file_data.count_documents({})
 
 
 db = Rohit(DB_URI, DB_NAME)

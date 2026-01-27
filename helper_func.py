@@ -6,7 +6,7 @@ import re
 import asyncio
 import time
 from pyrogram import filters
-from pyrogram.enums import ChatMemberStatus
+from pyrogram.enums import ChatMemberStatus, MessageOriginType
 from config import *
 from pyrogram.errors.exceptions.bad_request_400 import UserNotParticipant
 from shortzy import Shortzy
@@ -28,13 +28,17 @@ from database.database import *
 #
 
 #used for cheking if a user is admin ~Owner also treated as admin level
-async def check_admin(filter, client, update):
+async def is_admin(user_id: int):
     try:
-        user_id = update.from_user.id       
         return any([user_id == OWNER_ID, await db.admin_exist(user_id)])
     except Exception as e:
-        print(f"! Exception in check_admin: {e}")
+        print(f"! Exception in is_admin: {e}")
         return False
+
+async def check_admin(filter, client, update):
+    if not update.from_user:
+        return False
+    return await is_admin(update.from_user.id)
 
 
 # Don't Remove Credit @CodeFlix_Bots, @rohit_1888
@@ -156,15 +160,13 @@ async def get_messages(client, message_ids):
     return messages
 
 async def get_message_id(client, message):
-    if message.forward_from_chat:
-        if message.forward_from_chat.id == client.db_channel.id:
-            return message.forward_from_message_id
-        else:
-            return 0
-    elif message.forward_sender_name:
+    if message.forward_origin:
+        if message.forward_origin.type == MessageOriginType.CHANNEL:
+            if message.forward_origin.chat.id == client.db_channel.id:
+                return message.forward_origin.message_id
         return 0
     elif message.text:
-        pattern = "https://t.me/(?:c/)?(.*)/(\d+)"
+        pattern = r"https://t.me/(?:c/)?(.*)/(\d+)"
         matches = re.match(pattern,message.text)
         if not matches:
             return 0

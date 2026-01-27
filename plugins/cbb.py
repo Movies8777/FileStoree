@@ -11,8 +11,9 @@ from pyrogram import Client
 from bot import Bot
 from config import *
 from pyrogram.types import Message, InlineKeyboardMarkup, InlineKeyboardButton, CallbackQuery
+from pyrogram.errors import MessageNotModified
 from database.database import *
-from helper_func import *
+from helper_func import is_admin, get_exp_time
 
 def safe_edit(msg, *args, **kwargs):
     """Safely edit text without MESSAGE_NOT_MODIFIED crashes."""
@@ -28,10 +29,20 @@ def safe_edit(msg, *args, **kwargs):
 async def cb_handler(client: Bot, query: CallbackQuery):
     data = query.data
 
-    if data == "help":
-        await query.message.edit_text(
-            text=HELP_TXT.format(first=query.from_user.first_name),
-            disable_web_page_preview=True,
+    if data == "admin_cmds":
+        if not await is_admin(query.from_user.id):
+            return await query.answer("You are not authorized to view this!", show_alert=True)
+        await query.message.edit_caption(
+            caption=CMD_TXT,
+            reply_markup=InlineKeyboardMarkup([
+                [InlineKeyboardButton('‹ ʙᴀᴄᴋ', callback_data='start'),
+                 InlineKeyboardButton("ᴄʟᴏꜱᴇ", callback_data='close')]
+            ])
+        )
+
+    elif data == "help":
+        await query.message.edit_caption(
+            caption=HELP_TXT.format(first=query.from_user.first_name),
             reply_markup=InlineKeyboardMarkup([
                 [InlineKeyboardButton('ʜᴏᴍᴇ', callback_data='start'),
                  InlineKeyboardButton("ᴄʟᴏꜱᴇ", callback_data='close')]
@@ -39,9 +50,8 @@ async def cb_handler(client: Bot, query: CallbackQuery):
         )
 
     elif data == "about":
-        await query.message.edit_text(
-            text=ABOUT_TXT.format(first=query.from_user.first_name),
-            disable_web_page_preview=True,
+        await query.message.edit_caption(
+            caption=ABOUT_TXT.format(first=query.from_user.first_name),
             reply_markup=InlineKeyboardMarkup([
                 [InlineKeyboardButton('ʜᴏᴍᴇ', callback_data='start'),
                  InlineKeyboardButton('ᴄʟᴏꜱᴇ', callback_data='close')]
@@ -49,13 +59,18 @@ async def cb_handler(client: Bot, query: CallbackQuery):
         )
 
     elif data == "start":
-        await query.message.edit_text(
-            text=START_MSG.format(first=query.from_user.first_name),
-            disable_web_page_preview=True,
-            reply_markup=InlineKeyboardMarkup([
-                [InlineKeyboardButton("ʜᴇʟᴘ", callback_data='help'),
-                 InlineKeyboardButton("ᴀʙᴏᴜᴛ", callback_data='about')]
-            ])
+        buttons = [
+            [
+                InlineKeyboardButton("ʜᴇʟᴘ", callback_data='help'),
+                InlineKeyboardButton("ᴀʙᴏᴜᴛ", callback_data='about')
+            ]
+        ]
+        if await is_admin(query.from_user.id):
+            buttons.append([InlineKeyboardButton("ᴀᴅᴍɪɴ ᴄᴏᴍᴍᴀɴᴅs", callback_data="admin_cmds")])
+
+        await query.message.edit_caption(
+            caption=START_MSG.format(first=query.from_user.first_name),
+            reply_markup=InlineKeyboardMarkup(buttons)
         )
 
 

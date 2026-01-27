@@ -20,7 +20,7 @@
 
 <b>🚀 Key Features:</b>
 
-• <b>Batch & Custom Batch Links:</b> Create links for one or multiple posts easily using <code>/batch</code> & <code>/custom_batch</code>  
+• <b>Batch Links:</b> Create links for one or multiple posts easily using <code>/batch</code>
 • <b>Link Generator:</b> Instantly generate direct links with <code>/genlink</code>  
 • <b>Broadcast Tools:</b> Send messages or media to all users using <code>/broadcast</code>, <code>/dbroadcast</code>, or <code>/pbroadcast</code>  
 • <b>Auto File Deletion:</b> Control auto-delete with <code>/dlt_time</code> & <code>/check_dlt_time</code>  
@@ -68,7 +68,6 @@
 /stats - checking your bot uptime
 /start - start the bot or get posts  
 /batch - create link for more than one posts  
-/custom_batch - create custom batch from channel/group  
 /genlink - create link for one post  
 /users - view bot statistics  
 /broadcast - broadcast any messages to bot users  

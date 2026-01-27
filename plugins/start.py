@@ -29,7 +29,7 @@ from pyrogram.errors.exceptions.bad_request_400 import UserNotParticipant
 from pyrogram.errors import FloodWait, UserIsBlocked, InputUserDeactivated
 from bot import Bot
 from config import *
-from helper_func import *
+from helper_func import is_admin, is_subscribed, decode, get_messages, get_exp_time, wrap_with_redirect, get_shortlink
 from database.database import *
 from database.db_premium import *
 
@@ -225,28 +225,32 @@ async def start_command(client: Client, message: Message):
                 pass
 
     else:
-        reply_markup = InlineKeyboardMarkup(
-    [
-        [
-            InlineKeyboardButton("мσνιє'ѕ", url="https://t.me/Movies8777"),
-            InlineKeyboardButton("нєηαтєє", url="https://t.me/+1epnsIzoCx43YTk1")
-        ],
-        [
-            InlineKeyboardButton("ᴀʙᴏᴜᴛ", callback_data="about"),
-            InlineKeyboardButton("ʜᴇʟᴘ", callback_data="help")
+        buttons = [
+            [
+                InlineKeyboardButton("мσνιє'ѕ", url="https://t.me/Movies8777"),
+                InlineKeyboardButton("нєηαтєє", url="https://t.me/+1epnsIzoCx43YTk1")
+            ],
+            [
+                InlineKeyboardButton("ᴀʙᴏᴜᴛ", callback_data="about"),
+                InlineKeyboardButton("ʜᴇʟᴘ", callback_data="help")
+            ]
         ]
-    ]
-)
+
+        if await is_admin(message.from_user.id):
+            buttons.append([InlineKeyboardButton("ᴀᴅᴍɪɴ ᴄᴏᴍᴍᴀɴᴅs", callback_data="admin_cmds")])
+
+        reply_markup = InlineKeyboardMarkup(buttons)
+        caption = START_MSG.format(
+            first=message.from_user.first_name,
+            last=message.from_user.last_name,
+            username=None if not message.from_user.username else '@' + message.from_user.username,
+            mention=message.from_user.mention,
+            id=message.from_user.id
+        )
 
         await message.reply_photo(
             photo=START_PIC,
-            caption=START_MSG.format(
-                first=message.from_user.first_name,
-                last=message.from_user.last_name,
-                username=None if not message.from_user.username else '@' + message.from_user.username,
-                mention=message.from_user.mention,
-                id=message.from_user.id
-            ),
+            caption=caption,
             reply_markup=reply_markup,
             message_effect_id=5104841245755180586
         )

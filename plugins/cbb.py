@@ -115,13 +115,11 @@ async def cb_handler(client: Bot, query: CallbackQuery):
         total_ongoing = await db.total_ongoing_count()
 
         stats_msg = (
-            "<b><blockquote>📊 Bᴏᴛ Sᴛᴀᴛɪsᴛɪᴄs\n"
-            "━━━━━━━━━━━━━━━━━━━━━━\n"
-            f"📁 Tᴏᴛᴀʟ Fɪʟᴇs : {total_files}\n"
-            f"👥 Tᴏᴛᴀʟ Usᴇʀs : {total_users}\n"
-            f"🛡️ Tᴏᴅᴀʏ Vᴇʀɪғɪᴇᴅ : {total_verify}\n"
-            f"🎬 Oɴɢᴏɪɴɢ Sᴇʀɪᴇs : {total_ongoing}\n"
-            "━━━━━━━━━━━━━━━━━━━━━━</blockquote></b>"
+            "<b>✅ ᴛᴏᴛᴀʟ sᴛᴀᴛɪsᴛɪᴄs!</b>\n\n"
+            f"<b>ᴛᴏᴛᴀʟ ғɪʟᴇs:</b> <code>{total_files}</code>\n"
+            f"<b>ᴛᴏᴛᴀʟ ᴜsᴇʀs:</b> <code>{total_users}</code>\n"
+            f"<b>ᴛᴏᴅᴀʏ ᴠᴇʀɪғɪᴇᴅ:</b> <code>{total_verify}</code>\n"
+            f"<b>ᴏɴɢᴏɪɴɢ sᴇʀɪᴇs:</b> <code>{total_ongoing}</code>"
         )
 
         await query.message.edit_caption(
@@ -557,7 +555,7 @@ async def cb_handler(client: Bot, query: CallbackQuery):
                 InlineKeyboardButton("Cʟᴏsᴇ", callback_data="close")
             ]
         ]
-        await query.message.edit_text(text, reply_markup=InlineKeyboardMarkup(buttons))
+        await query.message.edit_caption(caption=text, reply_markup=InlineKeyboardMarkup(buttons))
 
     elif data == "toggle_protect":
         if query.from_user.id != OWNER_ID:
@@ -587,7 +585,7 @@ async def cb_handler(client: Bot, query: CallbackQuery):
                 InlineKeyboardButton("Cʟᴏsᴇ", callback_data="close")
             ]
         ]
-        await query.message.edit_text(text, reply_markup=InlineKeyboardMarkup(buttons))
+        await query.message.edit_caption(caption=text, reply_markup=InlineKeyboardMarkup(buttons))
 
     elif data == "test_shortlink":
         if query.from_user.id != OWNER_ID:
@@ -600,9 +598,42 @@ async def cb_handler(client: Bot, query: CallbackQuery):
         try:
             sample_link = "https://www.google.com"
             short = await get_shortlink(settings['shortlink_url'], settings['shortlink_api'], sample_link)
-            await query.answer(f"Test Successful!\n{short}", show_alert=True)
+
+            text = (
+                "<b>✅ sʜᴏʀᴛɴᴇʀ ᴛᴇsᴛ sᴜᴄᴄᴇssғᴜʟ!</b>\n\n"
+                f"<b>ᴛᴇsᴛ ᴜʀʟ:</b> <code>{sample_link}</code>\n"
+                f"<b>sʜᴏʀᴛ ᴜʀʟ:</b> <code>{short}</code>\n"
+                f"<b>ʀᴇsᴘᴏɴsᴇ:</b> success"
+            )
+            buttons = [[InlineKeyboardButton("◀ ʙᴀᴄᴋ", callback_data="back_settings")]]
+            await query.message.edit_caption(caption=text, reply_markup=InlineKeyboardMarkup(buttons))
+
         except Exception as e:
             await query.answer(f"Test Failed: {str(e)}", show_alert=True)
+
+    elif data == "back_settings":
+        if query.from_user.id != OWNER_ID:
+            return await query.answer("Only Owner can access this!", show_alert=True)
+        settings = await db.get_settings()
+        text = (
+            "<b>🛠 Oᴡɴᴇʀ Sᴇᴛᴛɪɴɢs</b>\n\n"
+            f"<b>Sʜᴏʀᴛʟɪɴᴋ Uʀʟ:</b> <code>{settings['shortlink_url']}</code>\n"
+            f"<b>Sʜᴏʀᴛʟɪɴᴋ Aᴘɪ:</b> <code>{settings['shortlink_api']}</code>\n"
+            f"<b>Sʜᴏʀᴛʟɪɴᴋ Sᴛᴀᴛᴜs:</b> {'ON' if settings['is_shortlink'] else 'OFF'}\n"
+            f"<b>Pʀᴏᴛᴇᴄᴛ Cᴏɴᴛᴇɴᴛ:</b> {'ON' if settings['protect_content'] else 'OFF'}\n\n"
+            "<i>Use /set_url to change URL and /set_api to change API.</i>"
+        )
+        buttons = [
+            [
+                InlineKeyboardButton(f"Sʜᴏʀᴛʟɪɴᴋ: {'ON' if settings['is_shortlink'] else 'OFF'}", callback_data="toggle_shortlink"),
+                InlineKeyboardButton(f"Pʀᴏᴛᴇᴄᴛ: {'ON' if settings['protect_content'] else 'OFF'}", callback_data="toggle_protect")
+            ],
+            [
+                InlineKeyboardButton("Tᴇsᴛ Sʜᴏʀᴛʟɪɴᴋ", callback_data="test_shortlink"),
+                InlineKeyboardButton("Cʟᴏsᴇ", callback_data="close")
+            ]
+        ]
+        await query.message.edit_caption(caption=text, reply_markup=InlineKeyboardMarkup(buttons))
 
 
 # Don't Remove Credit @CodeFlix_Bots, @rohit_1888

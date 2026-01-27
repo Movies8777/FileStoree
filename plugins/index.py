@@ -87,7 +87,8 @@ async def index_command(client: Bot, message: Message):
         except Exception as e:
             return await message.reply_text(f"<b>Error:</b> {e}")
 
-    waiting_msg = await message.reply_text("<b>Indexing started... Please wait.</b>")
+    from config import START_PIC
+    waiting_msg = await message.reply_photo(photo=START_PIC, caption="<b>Indexing started... Please wait.</b>")
 
     current = 0
     total_files = 0
@@ -181,25 +182,25 @@ async def index_command(client: Bot, message: Message):
 
         if current % 100 == 0:
             try:
-                await waiting_msg.edit_text(
-                    text=(
-                        "<b>✨ <u>ɪɴᴅᴇxɪɴɢ ɪɴ ᴘʀᴏɢʀᴇss...</u></b>\n\n"
-                        f"<b>📂 sᴀᴠᴇᴅ:</b> <code>{total_files}</code>\n"
-                        f"<b>⏩ sᴋɪᴘᴘᴇᴅ:</b> <code>{duplicate}</code> (ᴅᴜᴘʟɪᴄᴀᴛᴇ)\n"
-                        f"<b>🗑️ ᴅᴇʟᴇᴛᴇᴅ:</b> <code>{deleted}</code>\n"
-                        f"<b>🚫 ᴏᴛʜᴇʀs:</b> <code>{no_media + unsupported}</code>\n"
+                await waiting_msg.edit_caption(
+                    caption=(
+                        "<b>✅ ɪɴᴅᴇxɪɴɢ ɪɴ ᴘʀᴏɢʀᴇss!</b>\n\n"
+                        f"<b>sᴀᴠᴇᴅ:</b> <code>{total_files}</code>\n"
+                        f"<b>sᴋɪᴘᴘᴇᴅ:</b> <code>{duplicate}</code>\n"
+                        f"<b>ᴅᴇʟᴇᴛᴇᴅ:</b> <code>{deleted}</code>\n"
+                        f"<b>ᴏᴛʜᴇʀs:</b> <code>{no_media + unsupported}</code>"
                     )
                 )
             except:
                 pass
 
-    await waiting_msg.edit_text(
-        text=(
-            "<b>✅ <u>ɪɴᴅᴇxɪɴɢ ᴄᴏᴍᴘʟᴇᴛᴇᴅ</u></b>\n\n"
-            f"<b>📂 ᴛᴏᴛᴀʟ sᴀᴠᴇᴅ:</b> <code>{total_files}</code>\n"
-            f"<b>⏩ sᴋɪᴘᴘᴇᴅ:</b> <code>{duplicate}</code> (ᴅᴜᴘʟɪᴄᴀᴛᴇ)\n"
-            f"<b>🗑️ ᴅᴇʟᴇᴛᴇᴅ:</b> <code>{deleted}</code>\n"
-            f"<b>🚫 ᴏᴛʜᴇʀs:</b> <code>{no_media + unsupported}</code>\n"
-            f"<b>❌ ᴇʀʀᴏʀs:</b> <code>{errors}</code>"
+    await waiting_msg.edit_caption(
+        caption=(
+            "<b>✅ ɪɴᴅᴇxɪɴɢ ᴄᴏᴍᴘʟᴇᴛᴇᴅ!</b>\n\n"
+            f"<b>ᴛᴏᴛᴀʟ sᴀᴠᴇᴅ:</b> <code>{total_files}</code>\n"
+            f"<b>sᴋɪᴘᴘᴇᴅ:</b> <code>{duplicate}</code>\n"
+            f"<b>ᴅᴇʟᴇᴛᴇᴅ:</b> <code>{deleted}</code>\n"
+            f"<b>ᴏᴛʜᴇʀs:</b> <code>{no_media + unsupported}</code>\n"
+            f"<b>ᴇʀʀᴏʀs:</b> <code>{errors}</code>"
         )
     )

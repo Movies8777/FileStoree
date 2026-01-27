@@ -151,7 +151,7 @@ async def get_admins(client: Client, message: Message):
 
 @Bot.on_message(filters.command('stats') & filters.private & admin)
 async def get_stats(client: Client, message: Message):
-    pro = await message.reply("<b><i>ᴘʟᴇᴀsᴇ ᴡᴀɪᴛ..</i></b>", quote=True)
+    pro = await message.reply_photo(photo=START_PIC, caption="<b><i>ᴘʟᴇᴀsᴇ ᴡᴀɪᴛ..</i></b>", quote=True)
 
     total_users = await db.total_users_count()
     total_files = await db.total_files()
@@ -159,17 +159,15 @@ async def get_stats(client: Client, message: Message):
     total_ongoing = await db.total_ongoing_count()
 
     stats_msg = (
-        "<b><blockquote>📊 Bᴏᴛ Sᴛᴀᴛɪsᴛɪᴄs      ❞\n"
-        "━━━━━━━━━━━━━━━━━━━━━━\n"
-        f"📂 Tᴏᴛᴀʟ Fɪʟᴇs : {total_files}\n"
-        f"👤 Tᴏᴛᴀʟ Usᴇʀs : {total_users}\n"
-        f"✅ Tᴏᴅᴀʏ Vᴇʀɪғɪᴇᴅ : {total_verify}\n"
-        f"📺 Oɴɢᴏɪɴɢ Sᴇʀɪᴇs : {total_ongoing}\n"
-        "━━━━━━━━━━━━━━━━━━━━━━</blockquote></b>"
+        "<b>✅ ᴛᴏᴛᴀʟ sᴛᴀᴛɪsᴛɪᴄs!</b>\n\n"
+        f"<b>ᴛᴏᴛᴀʟ ғɪʟᴇs:</b> <code>{total_files}</code>\n"
+        f"<b>ᴛᴏᴛᴀʟ ᴜsᴇʀs:</b> <code>{total_users}</code>\n"
+        f"<b>ᴛᴏᴅᴀʏ ᴠᴇʀɪғɪᴇᴅ:</b> <code>{total_verify}</code>\n"
+        f"<b>ᴏɴɢᴏɪɴɢ sᴇʀɪᴇs:</b> <code>{total_ongoing}</code>"
     )
 
     reply_markup = InlineKeyboardMarkup([[InlineKeyboardButton("ᴄʟᴏsᴇ", callback_data="close")]])
-    await pro.edit(stats_msg, reply_markup=reply_markup)
+    await pro.edit_caption(caption=stats_msg, reply_markup=reply_markup)
 
 
 @Bot.on_message(filters.command('add_ongoing') & filters.private & admin)

@@ -497,7 +497,7 @@ async def owner_settings(client: Client, message: Message):
             InlineKeyboardButton("Cʟᴏsᴇ", callback_data="close")
         ]
     ]
-    await message.reply_text(text, reply_markup=InlineKeyboardMarkup(buttons))
+    await message.reply_photo(photo=START_PIC, caption=text, reply_markup=InlineKeyboardMarkup(buttons))
 
 @Bot.on_message(filters.command('set_url') & filters.user(OWNER_ID) & filters.private)
 async def set_shortlink_url(client: Client, message: Message):

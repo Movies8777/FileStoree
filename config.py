@@ -99,6 +99,8 @@ CMD_TXT_2 = """<blockquote><b>» ᴄᴏɴᴛᴇɴᴛ ᴍᴀɴᴀɢᴇᴍᴇɴᴛ
 <b>› /animepost :</b> ғᴏʀᴍᴀᴛᴛᴇᴅ ᴀɴɪᴍᴇ
 <b>› /file_details :</b> ᴄʜᴇᴄᴋ ғɪʟᴇ ɪɴ ᴅʙ
 <b>› /del_index :</b> ᴅᴇʟᴇᴛᴇ ɪɴᴅᴇxᴇᴅ ғɪʟᴇs
+<b>› /postlist :</b> ᴀᴅᴅ sᴄʜᴇᴅᴜʟᴇᴅ ʟɪsᴛ
+<b>› /liststats :</b> sᴄʜᴇᴅᴜʟᴇᴅ ᴅᴀsʜʙᴏᴀʀᴅ
 """
 #--------------------------------------------
 CUSTOM_CAPTION = os.environ.get("CUSTOM_CAPTION", "<b>• ʙʏ @Spicylinebun</b>") #set your Custom Caption here, Keep None for Disable Custom Caption

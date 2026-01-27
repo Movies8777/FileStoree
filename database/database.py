@@ -52,7 +52,8 @@ class Rohit:
         self.file_data = self.database['files']
         self.ongoing_data = self.database['ongoing']
         self.settings_data = self.database['settings']
-        
+        self.sched_queue_data = self.database['scheduled_queue']
+        self.sched_config_data = self.database['scheduler_config']
 
 
     # USER DATA
@@ -378,6 +379,56 @@ class Rohit:
         await self.settings_data.update_one(
             {'_id': 'global_settings'},
             {'$set': {'value': settings}},
+            upsert=True
+        )
+
+    # SCHEDULER DATA
+    async def add_to_sched_queue(self, query):
+        await self.sched_queue_data.insert_one({
+            'query': query,
+            'added_at': time.time(),
+            'status': 'pending'
+        })
+
+    async def get_sched_queue(self):
+        return await self.sched_queue_data.find({'status': 'pending'}).sort('added_at', 1).to_list(length=None)
+
+    async def remove_from_sched_queue(self, query_id):
+        from bson.objectid import ObjectId
+        await self.sched_queue_data.delete_one({'_id': ObjectId(query_id)})
+
+    async def clear_sched_queue(self):
+        await self.sched_queue_data.delete_many({})
+
+    async def get_next_sched_item(self):
+        return await self.sched_queue_data.find_one_and_update(
+            {'status': 'pending'},
+            {'$set': {'status': 'processing'}},
+            sort=[('added_at', 1)]
+        )
+
+    async def mark_sched_done(self, query_id):
+        await self.sched_queue_data.update_one({'_id': query_id}, {'$set': {'status': 'done'}})
+
+    async def get_sched_config(self):
+        from config import POST_CHANNEL_ID
+        config = await self.sched_config_data.find_one({'_id': 'sched_config'})
+        if not config:
+            default = {
+                '_id': 'sched_config',
+                'is_active': False,
+                'interval': 10800, # 3 hours
+                'last_post_time': 0,
+                'target_channel': POST_CHANNEL_ID
+            }
+            await self.sched_config_data.insert_one(default)
+            return default
+        return config
+
+    async def update_sched_config(self, key, value):
+        await self.sched_config_data.update_one(
+            {'_id': 'sched_config'},
+            {'$set': {key: value}},
             upsert=True
         )
 

@@ -5,7 +5,7 @@ from pyrogram import Client, filters
 from pyrogram.types import Message, InlineKeyboardMarkup, InlineKeyboardButton, CallbackQuery
 from bot import Bot
 from config import LOGGER, START_PIC, OWNER_ID
-from helper_func import admin
+from helper_func import admin, is_admin
 from database.database import db
 from plugins.post import process_post
 
@@ -147,7 +147,7 @@ async def list_stats(client: Bot, message: Message):
 
 @Bot.on_callback_query(filters.regex(r'^sched_'))
 async def sched_callbacks(client: Bot, query: CallbackQuery):
-    if not await admin(client, query.message): # Simplified admin check for callback
+    if not await is_admin(query.from_user.id):
         return await query.answer("Admin only!", show_alert=True)
 
     data = query.data

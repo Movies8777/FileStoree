@@ -264,19 +264,8 @@ async def refresh_dashboard(client, message):
         f"<b>Iɴᴛᴇʀᴠᴀʟ:</b> {interval_h} hours\n"
         f"<b>Tᴀʀɢᴇᴛ Cʜᴀɴɴᴇʟ:</b> <code>{config['target_channel']}</code>\n"
         f"<b>Qᴜᴇᴇ Sɪᴢᴇ:</b> {len(queue)}\n"
-        f"<b>Nᴇxᴛ Pᴏsᴛ Iɴ:</b> {next_post}\n\n"
-        "<b>Upᴄᴏᴍɪɴɢ Iᴛᴇᴍs:</b>\n"
+        f"<b>Nᴇxᴛ Pᴏsᴛ Iɴ:</b> {next_post}"
     )
-
-    if not queue:
-        text += "<i>Queue is empty.</i>"
-    else:
-        for i, item in enumerate(queue[:5], 1):
-            # Clean query for display: hide URL
-            display_query = re.sub(r'https?://\S+', '[Image]', item['query'])
-            text += f"{i}. <code>{display_query}</code>\n"
-        if len(queue) > 5:
-            text += f"<i>... and {len(queue)-5} more</i>"
 
     buttons = [
         [

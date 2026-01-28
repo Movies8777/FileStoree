@@ -11,6 +11,10 @@ from plugins.post import process_post
 
 logger = LOGGER(__name__)
 
+class SchedFileNotFoundError(Exception):
+    """Custom exception raised when a scheduled file is not found in database."""
+    pass
+
 # Scheduler loop
 async def scheduler_loop(client: Bot):
     while True:
@@ -46,6 +50,8 @@ async def scheduler_loop(client: Bot):
 
                             async def reply_text(self, text, *args, **kwargs):
                                 logger.info(f"Scheduler reply: {text}")
+                                if "Nᴏ ғɪʟᴇs ғᴏᴜɴᴅ" in text or "missing episodes" in text or "missing seasons" in text:
+                                    raise SchedFileNotFoundError(text)
                                 async def mock_delete(): pass
                                 return type('Msg', (), {'edit': self.reply_text, 'delete': mock_delete})()
 
@@ -60,6 +66,22 @@ async def scheduler_loop(client: Bot):
                             await db.mark_sched_done(item['_id'])
                             await db.update_sched_config('last_post_time', now)
                             logger.info(f"Successfully posted scheduled item: {item['query']}")
+                        except SchedFileNotFoundError as e:
+                            logger.warning(f"File not found for scheduled item '{item['query']}': {e}")
+                            await db.sched_queue_data.update_one({'_id': item['_id']}, {'$set': {'status': 'skipped'}})
+                            try:
+                                await client.send_message(
+                                    chat_id=OWNER_ID,
+                                    text=(
+                                        "<b>⚠️ sᴄʜᴇᴅᴜʟᴇᴅ ᴘᴏsᴛ sᴋɪᴘᴘᴇᴅ!</b>\n\n"
+                                        f"<b>ǫᴜᴇʀʏ:</b> <code>{item['query']}</code>\n"
+                                        f"<b>ʀᴇᴀsᴏɴ:</b> {str(e)}\n\n"
+                                        "<i>Please upload the file and re-add to queue. Trying next item...</i>"
+                                    )
+                                )
+                            except:
+                                pass
+                            continue # Try next item immediately
                         except Exception as e:
                             logger.error(f"Error in scheduled post processing: {e}")
                             # Put it back or mark as error? Mark as pending again if failed?

@@ -236,7 +236,7 @@ async def process_post(client: Bot, message: Message, target_chat_id: int):
             metadata_block = ""
             ep_range = f"{start_ep_tag} to {end_ep_tag}" if start_ep != end_ep else start_ep_tag
 
-            title_text = f"<b>📼 Sᴇʀɪᴇs: {clean_title(series_name)}</b>\n"
+            title_text = f"<b><a href='{poster_url}'>📼 Sᴇʀɪᴇs: {clean_title(series_name)}</a></b>\n"
 
             caption_parts = {
                 'title': title_text,
@@ -402,7 +402,7 @@ async def process_post(client: Bot, message: Message, target_chat_id: int):
 
                 metadata_block = ""
 
-                title_text = f"<b>📼 Sᴇʀɪᴇs: {clean_title(series_name)}</b>\n"
+                title_text = f"<b><a href='{poster_url}'>📼 Sᴇʀɪᴇs: {clean_title(series_name)}</a></b>\n"
 
                 caption_parts = {
                     'title': title_text,
@@ -519,7 +519,7 @@ async def process_post(client: Bot, message: Message, target_chat_id: int):
                 metadata_block = f"<b>{metadata_txt}</b>" if metadata_txt else ""
 
                 caption_parts = {
-                    'title': f"<b>📼 Mᴏᴠɪᴇ: {clean_title(movie_name)}</b>\n",
+                    'title': f"<b><a href='{poster_url}'>📼 Mᴏᴠɪᴇ: {clean_title(movie_name)}</a></b>\n",
                     'metadata': metadata_block,
                     'episode': f"<b>🎥 Qᴜᴀʟɪᴛʏ: {qualities or 'N/A'}</b>\n",
                     'audio_label': "🔊 Aᴜᴅɪᴏ: "

@@ -38,7 +38,8 @@ async def scheduler_loop(client: Bot):
                         class MockMessage:
                             def __init__(self, text, client):
                                 self.text = text
-                                self.command = text.split()[0][1:]
+                                splitted = text.split()
+                                self.command = [splitted[0][1:]] + splitted[1:]
                                 self.from_user = type('User', (), {'id': OWNER_ID})()
                                 self.chat = type('Chat', (), {'id': OWNER_ID})()
                                 self._client = client
@@ -156,6 +157,8 @@ async def sched_callbacks(client: Bot, query: CallbackQuery):
         config = await db.get_sched_config()
         new_status = not config['is_active']
         await db.update_sched_config('is_active', new_status)
+        if not new_status: # If turned OFF
+            await db.update_sched_config('last_post_time', time.time()) # Reset timer for next start
         await query.answer(f"Scheduler turned {'ON' if new_status else 'OFF'}")
         # Refresh dashboard
         await refresh_dashboard(client, query.message)
@@ -181,19 +184,34 @@ async def sched_callbacks(client: Bot, query: CallbackQuery):
         await query.answer("Queue cleared!")
         await refresh_dashboard(client, query.message)
 
-    elif data == "sched_view":
+    elif data == "sched_view" or data.startswith("sched_view_"):
+        page = int(data.split("_")[-1]) if "_" in data and data.split("_")[-1].isdigit() else 0
         queue = await db.get_sched_queue()
         if not queue:
             return await query.answer("Queue is empty!", show_alert=True)
 
-        text = "<b>📋 Fᴜʟʟ Sᴄʜᴇᴅᴜʟᴇᴅ Qᴜᴇᴜᴇ:</b>\n\n"
-        for i, item in enumerate(queue, 1):
-            text += f"{i}. <code>{item['query']}</code>\n"
-            if len(text) > 3500: # Telegram limit
-                text += "... more items ..."
-                break
+        per_page = 30
+        total_pages = (len(queue) + per_page - 1) // per_page
+        start = page * per_page
+        end = start + per_page
 
-        buttons = [[InlineKeyboardButton("◀ Back", callback_data="sched_back")]]
+        text = f"<b>📋 Fᴜʟʟ Sᴄʜᴇᴅᴜʟᴇᴅ Qᴜᴇᴜᴇ (Pᴀɢᴇ {page+1}/{total_pages}):</b>\n\n"
+        for i, item in enumerate(queue[start:end], start + 1):
+            # Clean query for display: hide URL
+            display_query = re.sub(r'https?://\S+', '[Image]', item['query'])
+            text += f"{i}. <code>{display_query}</code>\n"
+
+        buttons = []
+        nav = []
+        if page > 0:
+            nav.append(InlineKeyboardButton("◀", callback_data=f"sched_view_{page-1}"))
+        nav.append(InlineKeyboardButton(f"{page+1}/{total_pages}", callback_data="none"))
+        if page < total_pages - 1:
+            nav.append(InlineKeyboardButton("▶", callback_data=f"sched_view_{page+1}"))
+
+        if nav: buttons.append(nav)
+        buttons.append([InlineKeyboardButton("◀ Back", callback_data="sched_back")])
+
         await query.message.edit_caption(text, reply_markup=InlineKeyboardMarkup(buttons))
 
     elif data == "sched_back":
@@ -232,7 +250,9 @@ async def refresh_dashboard(client, message):
         text += "<i>Queue is empty.</i>"
     else:
         for i, item in enumerate(queue[:5], 1):
-            text += f"{i}. <code>{item['query']}</code>\n"
+            # Clean query for display: hide URL
+            display_query = re.sub(r'https?://\S+', '[Image]', item['query'])
+            text += f"{i}. <code>{display_query}</code>\n"
         if len(queue) > 5:
             text += f"<i>... and {len(queue)-5} more</i>"
 

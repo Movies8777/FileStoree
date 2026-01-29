@@ -11,11 +11,11 @@ from database.database import db
 logger = LOGGER(__name__)
 
 AUDIO_LANGUAGES = [
-    'English 🇺🇸🇬🇧', 'Hindi 🇮🇳', 'Tamil 🇮🇳', 'Telugu 🇮🇳', 'Malayalam 🇮🇳',
-    'Kannada 🇮🇳', 'Marathi 🇮🇳', 'Bengali 🇮🇳', 'Punjabi 🇮🇳', 'Gujarati 🇮🇳',
-    'Japanese 🇯🇵', 'Korean 🇰🇷', 'Chinese 🇨🇳', 'Turkish 🇹🇷', 'Spanish 🇪🇸',
-    'French 🇫🇷', 'German 🇩🇪', 'Italian 🇮🇹', 'Russian 🇷🇺', 'Portuguese 🇵🇹',
-    'Arabic 🇸🇦🇪🇬'
+    'English', 'Hindi', 'Tamil', 'Telugu', 'Malayalam',
+    'Kannada', 'Marathi', 'Bengali', 'Punjabi', 'Gujarati',
+    'Japanese', 'Korean', 'Chinese', 'Turkish', 'Spanish',
+    'French', 'German', 'Italian', 'Russian', 'Portuguese',
+    'Arabic'
 ]
 PENDING_ANIME_POSTS = {}
 
@@ -71,27 +71,27 @@ def extract_audio(file_names):
     subs = set()
 
     patterns = {
-        'English 🇺🇸🇬🇧': r'English|Eng',
-        'Hindi 🇮🇳': r'Hindi',
-        'Tamil 🇮🇳': r'Tamil|Tam',
-        'Telugu 🇮🇳': r'Telugu|Tel',
-        'Malayalam 🇮🇳': r'Malayalam|Mal',
-        'Kannada 🇮🇳': r'Kannada|Kan',
-        'Marathi 🇮🇳': r'Marathi|Mar',
-        'Bengali 🇮🇳': r'Bengali|Ben',
-        'Punjabi 🇮🇳': r'Punjabi|Pun',
-        'Gujarati 🇮🇳': r'Gujarati|Guj',
-        'Japanese 🇯🇵': r'Japanese|Jap',
-        'Korean 🇰🇷': r'Korean|Kor',
-        'Chinese 🇨🇳': r'Mandarin|Chinese|Chi',
-        'Turkish 🇹🇷': r'Turkish|Tur',
-        'Spanish 🇪🇸': r'Spanish|Spa',
-        'French 🇫🇷': r'French|Fre',
-        'German 🇩🇪': r'German|Ger',
-        'Italian 🇮🇹': r'Italian|Ita',
-        'Russian 🇷🇺': r'Russian|Rus',
-        'Portuguese 🇵🇹': r'Portuguese|Por',
-        'Arabic 🇸🇦🇪🇬': r'Arabic|Ara'
+        'English': r'English|Eng',
+        'Hindi': r'Hindi',
+        'Tamil': r'Tamil|Tam',
+        'Telugu': r'Telugu|Tel',
+        'Malayalam': r'Malayalam|Mal',
+        'Kannada': r'Kannada|Kan',
+        'Marathi': r'Marathi|Mar',
+        'Bengali': r'Bengali|Ben',
+        'Punjabi': r'Punjabi|Pun',
+        'Gujarati': r'Gujarati|Guj',
+        'Japanese': r'Japanese|Jap',
+        'Korean': r'Korean|Kor',
+        'Chinese': r'Mandarin|Chinese|Chi',
+        'Turkish': r'Turkish|Tur',
+        'Spanish': r'Spanish|Spa',
+        'French': r'French|Fre',
+        'German': r'German|Ger',
+        'Italian': r'Italian|Ita',
+        'Russian': r'Russian|Rus',
+        'Portuguese': r'Portuguese|Por',
+        'Arabic': r'Arabic|Ara'
     }
 
     sub_patterns = {
@@ -115,12 +115,12 @@ def extract_audio(file_names):
         # Sort languages but keep Hindi and English first
         sorted_langs = sorted(list(langs))
         pref = []
-        if 'Hindi 🇮🇳' in sorted_langs:
-            sorted_langs.remove('Hindi 🇮🇳')
-            pref.append('Hindi 🇮🇳')
-        if 'English 🇺🇸🇬🇧' in sorted_langs:
-            sorted_langs.remove('English 🇺🇸🇬🇧')
-            pref.append('English 🇺🇸🇬🇧')
+        if 'Hindi' in sorted_langs:
+            sorted_langs.remove('Hindi')
+            pref.append('Hindi')
+        if 'English' in sorted_langs:
+            sorted_langs.remove('English')
+            pref.append('English')
         res.extend(pref + sorted_langs)
 
     if subs:
@@ -633,13 +633,13 @@ async def anime_done_callback(client: Bot, query: CallbackQuery):
 
     # Sort selected languages
     sorted_langs = sorted(selected_langs)
-    if 'Hindi 🇮🇳' in sorted_langs:
-        sorted_langs.remove('Hindi 🇮🇳')
-        sorted_langs.insert(0, 'Hindi 🇮🇳')
-    elif 'English 🇺🇸🇬🇧' in sorted_langs:
+    if 'Hindi' in sorted_langs:
+        sorted_langs.remove('Hindi')
+        sorted_langs.insert(0, 'Hindi')
+    elif 'English' in sorted_langs:
         # If Hindi not present, English is priority
-        sorted_langs.remove('English 🇺🇸🇬🇧')
-        sorted_langs.insert(0, 'English 🇺🇸🇬🇧')
+        sorted_langs.remove('English')
+        sorted_langs.insert(0, 'English')
 
     audios = " - ".join(sorted_langs)
 

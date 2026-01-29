@@ -5,12 +5,18 @@ from pyrogram import Client, filters
 from pyrogram.types import Message, InlineKeyboardMarkup, InlineKeyboardButton, CallbackQuery
 from bot import Bot
 from config import LOGGER, POST_CHANNEL_ID, ANIME_CHANNEL_ID, TUT_VID
-from helper_func import admin, encode, clean_title, get_metadata
+from helper_func import admin, encode, clean_title
 from database.database import db
 
 logger = LOGGER(__name__)
 
-AUDIO_LANGUAGES = ['Hindi', 'English', 'Japanese', 'Tamil', 'Telugu', 'Malayalam', 'Kannada', 'Bengali', 'Marathi', 'Punjabi', 'ESubs']
+AUDIO_LANGUAGES = [
+    'English 🇺🇸🇬🇧', 'Hindi 🇮🇳', 'Tamil 🇮🇳', 'Telugu 🇮🇳', 'Malayalam 🇮🇳',
+    'Kannada 🇮🇳', 'Marathi 🇮🇳', 'Bengali 🇮🇳', 'Punjabi 🇮🇳', 'Gujarati 🇮🇳',
+    'Japanese 🇯🇵', 'Korean 🇰🇷', 'Chinese 🇨🇳', 'Turkish 🇹🇷', 'Spanish 🇪🇸',
+    'French 🇫🇷', 'German 🇩🇪', 'Italian 🇮🇹', 'Russian 🇷🇺', 'Portuguese 🇵🇹',
+    'Arabic 🇸🇦🇪🇬'
+]
 PENDING_ANIME_POSTS = {}
 
 def extract_quality(file_names):
@@ -65,15 +71,27 @@ def extract_audio(file_names):
     subs = set()
 
     patterns = {
-        'Hindi': r'Hindi',
-        'English': r'English|Eng',
-        'Tamil': r'Tamil',
-        'Telugu': r'Telugu',
-        'Malayalam': r'Malayalam',
-        'Kannada': r'Kannada',
-        'Bengali': r'Bengali',
-        'Marathi': r'Marathi',
-        'Punjabi': r'Punjabi'
+        'English 🇺🇸🇬🇧': r'English|Eng',
+        'Hindi 🇮🇳': r'Hindi',
+        'Tamil 🇮🇳': r'Tamil|Tam',
+        'Telugu 🇮🇳': r'Telugu|Tel',
+        'Malayalam 🇮🇳': r'Malayalam|Mal',
+        'Kannada 🇮🇳': r'Kannada|Kan',
+        'Marathi 🇮🇳': r'Marathi|Mar',
+        'Bengali 🇮🇳': r'Bengali|Ben',
+        'Punjabi 🇮🇳': r'Punjabi|Pun',
+        'Gujarati 🇮🇳': r'Gujarati|Guj',
+        'Japanese 🇯🇵': r'Japanese|Jap',
+        'Korean 🇰🇷': r'Korean|Kor',
+        'Chinese 🇨🇳': r'Mandarin|Chinese|Chi',
+        'Turkish 🇹🇷': r'Turkish|Tur',
+        'Spanish 🇪🇸': r'Spanish|Spa',
+        'French 🇫🇷': r'French|Fre',
+        'German 🇩🇪': r'German|Ger',
+        'Italian 🇮🇹': r'Italian|Ita',
+        'Russian 🇷🇺': r'Russian|Rus',
+        'Portuguese 🇵🇹': r'Portuguese|Por',
+        'Arabic 🇸🇦🇪🇬': r'Arabic|Ara'
     }
 
     sub_patterns = {
@@ -94,12 +112,16 @@ def extract_audio(file_names):
 
     res = []
     if langs:
-        # Sort languages but keep Hindi first if possible or just alphabetical
+        # Sort languages but keep Hindi and English first
         sorted_langs = sorted(list(langs))
-        if 'Hindi' in sorted_langs:
-            sorted_langs.remove('Hindi')
-            sorted_langs.insert(0, 'Hindi')
-        res.extend(sorted_langs)
+        pref = []
+        if 'Hindi 🇮🇳' in sorted_langs:
+            sorted_langs.remove('Hindi 🇮🇳')
+            pref.append('Hindi 🇮🇳')
+        if 'English 🇺🇸🇬🇧' in sorted_langs:
+            sorted_langs.remove('English 🇺🇸🇬🇧')
+            pref.append('English 🇺🇸🇬🇧')
+        res.extend(pref + sorted_langs)
 
     if subs:
         res.extend(sorted(list(subs)))
@@ -220,8 +242,6 @@ async def process_post(client: Bot, message: Message, target_chat_id: int):
             years = extract_year(all_metadata_sources)
             audios = extract_audio(all_metadata_sources)
 
-            rating, genre = get_metadata(clean_title(series_name))
-
             is_multi = any(re.search(r'multi|dual', src, re.IGNORECASE) for src in all_metadata_sources)
 
             # Stop if missing
@@ -236,11 +256,11 @@ async def process_post(client: Bot, message: Message, target_chat_id: int):
             metadata_block = ""
             ep_range = f"{start_ep_tag} to {end_ep_tag}" if start_ep != end_ep else start_ep_tag
 
-            title_text = f"<b><a href='{poster_url}'>📼 Sᴇʀɪᴇs: {clean_title(series_name)}</a></b>\n"
+            title_text = f"<b>📼 Sᴇʀɪᴇs: {clean_title(series_name)}</b>\n"
 
             caption_parts = {
                 'title': title_text,
-                'season': f"<b>Sᴇᴀsᴏɴ: {season_tag}</b>\n",
+                'season': f"<b>📅 Sᴇᴀsᴏɴ: {season_tag}</b>\n",
                 'metadata': metadata_block,
                 'episode': f"<b>🔢 Eᴘɪsᴏᴅᴇ: {ep_range}\n🎥 Qᴜᴀʟɪᴛʏ: {qualities or 'N/A'}</b>\n",
                 'audio_label': "🔊 Aᴜᴅɪᴏ: "
@@ -387,8 +407,6 @@ async def process_post(client: Bot, message: Message, target_chat_id: int):
                 years = extract_year(all_metadata_sources)
                 audios = extract_audio(all_metadata_sources)
 
-                rating, genre = get_metadata(clean_title(series_name))
-
                 is_multi = any(re.search(r'multi|dual', src, re.IGNORECASE) for src in all_metadata_sources)
 
                 season_info = f"{start_str} - {end_str}" if start_str != end_str else start_str
@@ -402,11 +420,11 @@ async def process_post(client: Bot, message: Message, target_chat_id: int):
 
                 metadata_block = ""
 
-                title_text = f"<b><a href='{poster_url}'>📼 Sᴇʀɪᴇs: {clean_title(series_name)}</a></b>\n"
+                title_text = f"<b>📼 Sᴇʀɪᴇs: {clean_title(series_name)}</b>\n"
 
                 caption_parts = {
                     'title': title_text,
-                    'season': f"<b>Sᴇᴀsᴏɴ: {season_info}</b>\n",
+                    'season': f"<b>📅 Sᴇᴀsᴏɴ: {season_info}</b>\n",
                     'metadata': metadata_block,
                     'episode': f"<b>🎥 Qᴜᴀʟɪᴛʏ: {qualities or 'N/A'}</b>\n",
                     'audio_label': "🔊 Aᴜᴅɪᴏ: "
@@ -508,8 +526,6 @@ async def process_post(client: Bot, message: Message, target_chat_id: int):
                 years = extract_year(all_metadata_sources)
                 audios = extract_audio(all_metadata_sources)
 
-                rating, genre = get_metadata(clean_title(movie_name))
-
                 is_multi = any(re.search(r'multi|dual', src, re.IGNORECASE) for src in all_metadata_sources)
 
                 # Metadata block without N/A
@@ -519,7 +535,7 @@ async def process_post(client: Bot, message: Message, target_chat_id: int):
                 metadata_block = f"<b>{metadata_txt}</b>" if metadata_txt else ""
 
                 caption_parts = {
-                    'title': f"<b><a href='{poster_url}'>📼 Mᴏᴠɪᴇ: {clean_title(movie_name)}</a></b>\n",
+                    'title': f"<b>📼 Mᴏᴠɪᴇ: {clean_title(movie_name)}</b>\n",
                     'metadata': metadata_block,
                     'episode': f"<b>🎥 Qᴜᴀʟɪᴛʏ: {qualities or 'N/A'}</b>\n",
                     'audio_label': "🔊 Aᴜᴅɪᴏ: "
@@ -617,9 +633,13 @@ async def anime_done_callback(client: Bot, query: CallbackQuery):
 
     # Sort selected languages
     sorted_langs = sorted(selected_langs)
-    if 'Hindi' in sorted_langs:
-        sorted_langs.remove('Hindi')
-        sorted_langs.insert(0, 'Hindi')
+    if 'Hindi 🇮🇳' in sorted_langs:
+        sorted_langs.remove('Hindi 🇮🇳')
+        sorted_langs.insert(0, 'Hindi 🇮🇳')
+    elif 'English 🇺🇸🇬🇧' in sorted_langs:
+        # If Hindi not present, English is priority
+        sorted_langs.remove('English 🇺🇸🇬🇧')
+        sorted_langs.insert(0, 'English 🇺🇸🇬🇧')
 
     audios = " - ".join(sorted_langs)
 

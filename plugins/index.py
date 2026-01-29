@@ -67,6 +67,18 @@ async def auto_index(client: Bot, message: Message):
                 msg_id=message.id,
                 caption=caption
             )
+            # Notify admin about the auto-indexed file
+            try:
+                await client.send_message(
+                    chat_id=OWNER_ID,
+                    text=(
+                        "<b>✅ Aᴜᴛᴏ-Iɴᴅᴇxᴇᴅ Fɪʟᴇ!</b>\n\n"
+                        f"<b>Nᴀᴍᴇ:</b> <code>{file_name}</code>\n"
+                        f"<b>Cᴀᴘᴛɪᴏɴ:</b>\n{caption}"
+                    )
+                )
+            except:
+                pass
         except Exception as e:
             logger.error(f"Error in auto-indexing: {e}")
 

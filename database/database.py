@@ -1,9 +1,8 @@
 #Codeflix_Botz
 #rohit_1888 on Tg
 
-import motor, asyncio
+import motor, asyncio, time
 import motor.motor_asyncio
-import time
 import pymongo, os
 from config import DB_URI, DB_NAME
 import logging

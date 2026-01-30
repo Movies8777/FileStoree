@@ -29,6 +29,7 @@ from pyrogram.errors.exceptions.bad_request_400 import UserNotParticipant
 from pyrogram.errors import FloodWait, UserIsBlocked, InputUserDeactivated
 from bot import Bot
 from config import *
+import helper_func
 from helper_func import is_admin, is_subscribed, decode, get_messages, get_exp_time, wrap_with_redirect, get_shortlink, admin
 from database.database import *
 from database.db_premium import *
@@ -53,7 +54,7 @@ async def start_command(client: Client, message: Message):
             pass
 
     # Force Subscribe
-    if not await is_subscribed(client, user_id):
+    if not await helper_func.is_subscribed(client, user_id):
         return await not_joined(client, message)
 
     # Banned?
@@ -275,7 +276,7 @@ async def not_joined(client: Client, message: Message):
             mode = await db.get_channel_mode(chat_id)
             await message.reply_chat_action(ChatAction.TYPING)
 
-            if not await is_sub(client, user_id, chat_id):
+            if not await helper_func.is_sub(client, user_id, chat_id):
                 try:
                     if chat_id in chat_data_cache:
                         data = chat_data_cache[chat_id]

@@ -78,6 +78,11 @@ async def start_command(client: Client, message: Message):
             if verify_status['is_verified'] and VERIFY_EXPIRE < (time.time() - verify_status['verified_time']):
                 await db.update_verify_status(user_id, is_verified=False, verify_token="", original_start="")
 
+        # Check for special link bypass
+        is_special = False
+        if message.text.startswith("/start spcl_"):
+            is_special = True
+
         # === VERIFY TOKEN (User came back after shortlink) ===
         if message.text.startswith("/start verify_"):
             _, token = message.text.split("verify_", 1)
@@ -106,7 +111,7 @@ async def start_command(client: Client, message: Message):
             )
 
         # === NOT VERIFIED & NOT PREMIUM → SHOW SHORTLINK ===
-        if not verify_status['is_verified'] and not is_premium:
+        if not is_special and not verify_status['is_verified'] and not is_premium:
             try:
                 original_cmd = text.split(" ", 1)[1]
             except:
@@ -140,6 +145,8 @@ async def start_command(client: Client, message: Message):
         # === SEND FILE (VERIFIED OR PREMIUM) ===
         try:
             base64_string = text.split(" ", 1)[1]
+            if is_special:
+                base64_string = base64_string.replace("spcl_", "")
         except:
             return
 

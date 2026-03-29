@@ -7,13 +7,15 @@
 #
 # All rights reserved.
 
+import random
 from pyrogram import Client 
 from bot import Bot
 from config import *
 from pyrogram.types import Message, InlineKeyboardMarkup, InlineKeyboardButton, CallbackQuery
 from pyrogram.errors import MessageNotModified
 from database.database import *
-from helper_func import is_admin, get_exp_time
+from helper_func import is_admin, get_exp_time, encode
+import re
 
 def safe_edit(msg, *args, **kwargs):
     """Safely edit text without MESSAGE_NOT_MODIFIED crashes."""
@@ -25,20 +27,33 @@ def safe_edit(msg, *args, **kwargs):
         pass
 
 
-@Bot.on_callback_query()
+@Bot.on_callback_query(group=1)
 async def cb_handler(client: Bot, query: CallbackQuery):
     data = query.data
 
-    if data == "admin_cmds":
+    if data.startswith("admin_cmds"):
         if not await is_admin(query.from_user.id):
             return await query.answer("You are not authorized to view this!", show_alert=True)
-        await query.message.edit_caption(
-            caption=CMD_TXT,
-            reply_markup=InlineKeyboardMarkup([
-                [InlineKeyboardButton('‹ ʙᴀᴄᴋ', callback_data='start'),
-                 InlineKeyboardButton("ᴄʟᴏꜱᴇ", callback_data='close')]
-            ])
-        )
+
+        page = data.split("_")[-1] if "_" in data else "1"
+        caption = CMD_TXT_1 if page == "1" else CMD_TXT_2
+
+        buttons = []
+        if page == "1":
+            buttons.append([InlineKeyboardButton("ɴᴇxᴛ ᴘᴀɢᴇ 〉", callback_data="admin_cmds_2")])
+        else:
+            buttons.append([InlineKeyboardButton("〈 ʙᴀᴄᴋ ᴘᴀɢᴇ", callback_data="admin_cmds_1")])
+
+        buttons.append([InlineKeyboardButton('‹ ʙᴀᴄᴋ', callback_data='start'),
+                        InlineKeyboardButton("ᴄʟᴏꜱᴇ", callback_data='close')])
+
+        try:
+            await query.message.edit_caption(
+                caption=caption,
+                reply_markup=InlineKeyboardMarkup(buttons)
+            )
+        except Exception as e:
+            await query.answer(f"Error: {e}", show_alert=True)
 
     elif data == "help":
         await query.message.edit_caption(
@@ -66,11 +81,53 @@ async def cb_handler(client: Bot, query: CallbackQuery):
             ]
         ]
         if await is_admin(query.from_user.id):
-            buttons.append([InlineKeyboardButton("ᴀᴅᴍɪɴ ᴄᴏᴍᴍᴀɴᴅs", callback_data="admin_cmds")])
+            buttons.append([
+                InlineKeyboardButton("ᴀᴅᴍɪɴ ᴄᴏᴍᴍᴀɴᴅs", callback_data="admin_cmds_1"),
+                InlineKeyboardButton("📊 sᴛᴀᴛs", callback_data="stats")
+            ])
+
+        caption = START_MSG.format(
+            first=query.from_user.first_name,
+            last=query.from_user.last_name,
+            username=None if not query.from_user.username else '@' + query.from_user.username,
+            mention=query.from_user.mention,
+            id=query.from_user.id
+        )
+        reply_markup = InlineKeyboardMarkup(buttons)
+
+        if query.message.photo or query.message.video:
+            try:
+                await query.message.edit_caption(caption=caption, reply_markup=reply_markup)
+            except:
+                await query.message.delete()
+                await client.send_photo(chat_id=query.message.chat.id, photo=START_PIC, caption=caption, reply_markup=reply_markup)
+        else:
+            await query.message.delete()
+            await client.send_photo(chat_id=query.message.chat.id, photo=START_PIC, caption=caption, reply_markup=reply_markup)
+
+    elif data == "stats":
+        if not await is_admin(query.from_user.id):
+            return await query.answer("You are not authorized!", show_alert=True)
+
+        total_users = await db.total_users_count()
+        total_files = await db.total_files()
+        total_verify = await db.get_total_verify_count()
+        total_ongoing = await db.total_ongoing_count()
+
+        stats_msg = (
+            "<b>✅ ᴛᴏᴛᴀʟ sᴛᴀᴛɪsᴛɪᴄs!</b>\n\n"
+            f"<b>ᴛᴏᴛᴀʟ ғɪʟᴇs:</b> <code>{total_files}</code>\n"
+            f"<b>ᴛᴏᴛᴀʟ ᴜsᴇʀs:</b> <code>{total_users}</code>\n"
+            f"<b>ᴛᴏᴅᴀʏ ᴠᴇʀɪғɪᴇᴅ:</b> <code>{total_verify}</code>\n"
+            f"<b>ᴏɴɢᴏɪɴɢ sᴇʀɪᴇs:</b> <code>{total_ongoing}</code>"
+        )
 
         await query.message.edit_caption(
-            caption=START_MSG.format(first=query.from_user.first_name),
-            reply_markup=InlineKeyboardMarkup(buttons)
+            caption=stats_msg,
+            reply_markup=InlineKeyboardMarkup([
+                [InlineKeyboardButton('‹ ʙᴀᴄᴋ', callback_data='start'),
+                 InlineKeyboardButton("ᴄʟᴏsᴇ", callback_data='close')]
+            ])
         )
 
 
@@ -161,6 +218,19 @@ async def cb_handler(client: Bot, query: CallbackQuery):
         except:
             pass
 
+    elif data == "confirm_del_all":
+        if not await is_admin(query.from_user.id):
+            return await query.answer("You are not authorized!", show_alert=True)
+        await db.delete_all_files()
+        await query.message.edit_text("<b>✅ All indexed files have been deleted successfully!</b>")
+
+    elif data.startswith("confirm_del_spec_"):
+        if not await is_admin(query.from_user.id):
+            return await query.answer("You are not authorized!", show_alert=True)
+        search_query = data.replace("confirm_del_spec_", "")
+        res = await db.delete_specific_files(search_query)
+        await query.message.edit_text(f"<b>✅ {res.deleted_count} files matching '{search_query}' have been deleted!</b>")
+
     elif data.startswith("rfs_ch_"):
         cid = int(data.split("_")[2])
         try:
@@ -200,6 +270,242 @@ async def cb_handler(client: Bot, query: CallbackQuery):
             reply_markup=InlineKeyboardMarkup(buttons)
         )
 
+    elif data == "ongoing_list" or data.startswith("ongoing_list_"):
+        if data == "ongoing_list":
+            page = 0
+        else:
+            page = int(data.split("_")[2])
+
+        all_ongoing = await db.get_all_ongoing()
+        if not all_ongoing:
+            return await query.message.edit_text("<b>No ongoing series found!</b>",
+                                                reply_markup=InlineKeyboardMarkup([[InlineKeyboardButton("ᴄʟᴏsᴇ", callback_data="close")]]))
+
+        # Pagination logic (10 per page)
+        per_page = 10
+        total_pages = (len(all_ongoing) + per_page - 1) // per_page
+        start = page * per_page
+        end = start + per_page
+
+        buttons = []
+        for series in all_ongoing[start:end]:
+            buttons.append([InlineKeyboardButton(f"📺 {series['title']} (S{series['season']} E{series['current_ep']})",
+                                                 callback_data=f"manage_ongoing_{series['title'][:20]}")])
+
+        # Navigation buttons
+        nav = []
+        if page > 0:
+            nav.append(InlineKeyboardButton("◀️ Bᴀᴄᴋ", callback_data=f"ongoing_list_{page-1}"))
+        nav.append(InlineKeyboardButton(f"📄 {page+1}/{total_pages}", callback_data="none"))
+        if page < total_pages - 1:
+            nav.append(InlineKeyboardButton("Nᴇxᴛ ▶️", callback_data=f"ongoing_list_{page+1}"))
+
+        if nav:
+            buttons.append(nav)
+
+        buttons.append([InlineKeyboardButton("ᴄʟᴏsᴇ", callback_data="close")])
+        await query.message.edit_text("<b>📺 Oɴɢᴏɪɴɢ Sᴇʀɪᴇs Mᴀɴᴀɢᴇᴍᴇɴᴛ</b>",
+                                     reply_markup=InlineKeyboardMarkup(buttons))
+
+    elif data.startswith("manage_ongoing_"):
+        title_prefix = data.replace("manage_ongoing_", "")
+        all_ongoing = await db.get_all_ongoing()
+        series = None
+        for s in all_ongoing:
+            if s['title'].startswith(title_prefix):
+                series = s
+                break
+
+        if not series:
+            return await query.answer("Series not found!", show_alert=True)
+
+        text = (f"<b>📺 Mᴀɴᴀɢɪɴɢ: {series['title']}</b>\n\n"
+                f"<b>Sᴇᴀsᴏɴ:</b> {series['season']}\n"
+                f"<b>ᴄᴜʀʀᴇɴᴛ Eᴘɪsᴏᴅᴇ:</b> {series['current_ep']}\n"
+                f"<b>Tᴏᴛᴀʟ Eᴘɪsᴏᴅᴇs:</b> {series['total_eps']}\n"
+                f"<b>Lᴀɴɢᴜᴀɢᴇ:</b> {series['language']}\n"
+                f"<b>Rᴇʟᴇᴀsᴇ Dᴀʏ:</b> {series['release_day']}")
+
+        buttons = [
+            [InlineKeyboardButton("📤 Pᴏsᴛ Nᴇxᴛ Eᴘɪsᴏᴅᴇ", callback_data=f"post_ongoing_{series['title'][:20]}")],
+            [InlineKeyboardButton("➕ Iɴᴄʀᴇᴍᴇɴᴛ Eᴘ", callback_data=f"inc_ep_{series['title'][:20]}"),
+             InlineKeyboardButton("➖ Dᴇᴄʀᴇᴍᴇɴᴛ Eᴘ", callback_data=f"dec_ep_{series['title'][:20]}")],
+            [InlineKeyboardButton("‹ ʙᴀᴄᴋ", callback_data="ongoing_list_0"),
+             InlineKeyboardButton("ᴄʟᴏsᴇ", callback_data="close")]
+        ]
+        await query.message.edit_text(text, reply_markup=InlineKeyboardMarkup(buttons))
+
+    elif data.startswith("inc_ep_") or data.startswith("dec_ep_"):
+        is_inc = data.startswith("inc_ep_")
+        title_prefix = data.replace("inc_ep_", "").replace("dec_ep_", "")
+        all_ongoing = await db.get_all_ongoing()
+        series = None
+        for s in all_ongoing:
+            if s['title'].startswith(title_prefix):
+                series = s
+                break
+
+        if not series:
+            return await query.answer("Series not found!", show_alert=True)
+
+        new_ep = int(series['current_ep']) + (1 if is_inc else -1)
+        if new_ep < 0: new_ep = 0
+
+        await db.update_ongoing_ep(series['title'], str(new_ep))
+        await query.answer(f"Episode updated to {new_ep}")
+
+        # Refresh management view
+        series['current_ep'] = str(new_ep)
+        text = (f"<b>📺 Mᴀɴᴀɢɪɴɢ: {series['title']}</b>\n\n"
+                f"<b>Sᴇᴀsᴏɴ:</b> {series['season']}\n"
+                f"<b>ᴄᴜʀʀᴇɴᴛ Eᴘɪsᴏᴅᴇ:</b> {series['current_ep']}\n"
+                f"<b>Tᴏᴛᴀʟ Eᴘɪsᴏᴅᴇs:</b> {series['total_eps']}\n"
+                f"<b>Lᴀɴɢᴜᴀɢᴇ:</b> {series['language']}\n"
+                f"<b>Rᴇʟᴇᴀsᴇ Dᴀʏ:</b> {series['release_day']}")
+
+        buttons = [
+            [InlineKeyboardButton("📤 Pᴏsᴛ Nᴇxᴛ Eᴘɪsᴏᴅᴇ", callback_data=f"post_ongoing_{series['title'][:20]}")],
+            [InlineKeyboardButton("➕ Iɴᴄʀᴇᴍᴇɴᴛ Eᴘ", callback_data=f"inc_ep_{series['title'][:20]}"),
+             InlineKeyboardButton("➖ Dᴇᴄʀᴇᴍᴇɴᴛ Eᴘ", callback_data=f"dec_ep_{series['title'][:20]}")],
+            [InlineKeyboardButton("‹ ʙᴀᴄᴋ", callback_data="ongoing_list_0"),
+             InlineKeyboardButton("ᴄʟᴏsᴇ", callback_data="close")]
+        ]
+        await query.message.edit_text(text, reply_markup=InlineKeyboardMarkup(buttons))
+
+    elif data.startswith("post_ongoing_"):
+        title_prefix = data.replace("post_ongoing_", "")
+        all_ongoing = await db.get_all_ongoing()
+        series = None
+        for s in all_ongoing:
+            if s['title'].startswith(title_prefix):
+                series = s
+                break
+
+        if not series:
+            return await query.answer("Series not found!", show_alert=True)
+
+        # Search for files matching the episode
+        ep_tag = f"E{int(series['current_ep']):02d}"
+        search_query = f"{series['title']} S{series['season']} {ep_tag}"
+        files = await db.find_file(search_query)
+
+        if not files:
+            return await query.answer(f"No files found for {series['title']} {ep_tag} in DB! Please upload first.", show_alert=True)
+
+        # Metadata extraction for ongoing post
+        from plugins.post import extract_quality
+        all_metadata_sources = [f['file_name'] for f in files] + [f.get('caption', '') for f in files]
+        qualities = extract_quality(all_metadata_sources)
+
+        # Format the caption as requested
+        caption = (f"<b>✦ {series['title']}</b>\n\n"
+                   f"<b>➥ Season - {series['season']}</b>\n"
+                   f"<b>➥ Episode - {series['current_ep']}</b>\n"
+                   f"<b>➥ Language - {series['language']}</b>\n")
+
+        if qualities:
+            caption += f"<b>➥ Quality - {qualities}</b>\n"
+
+        caption += (f"\n<blockquote><b>🔔 New Episode Every {series['release_day']}.</b></blockquote>\n\n"
+                   f"<blockquote><b>✮ Usᴇ VLC Pʟᴀʏᴇʀ Oʀ Mx Pʟᴀʏᴇʀ To Cʜᴀɴɢᴇ Aᴜᴅɪᴏ Aɴᴅ Sᴜʙᴛɪᴛʟᴇs Fᴏʀ A Bᴇᴛᴛᴇʀ Vɪᴇᴡɪɴɢ Exᴘᴇʀɪᴇɴᴄᴇ.</b></blockquote>")
+
+        # Quality buttons logic mirrored from post.py
+        res_groups = {}
+        for file in files:
+            res_match = re.search(r'(\d{3,4}p|4[kK])', file['file_name'], re.IGNORECASE)
+            res = res_match.group(1).lower() if res_match else "hdr"
+            if res not in res_groups:
+                res_groups[res] = []
+            res_groups[res].append(file)
+
+        buttons = []
+        def q_sort(q):
+            val = re.sub(r'p|k', '', q, flags=re.I)
+            return int(val) if val.isdigit() else 0
+
+        all_res_buttons = []
+        bot_username = (await client.get_me()).username
+
+        for res in sorted(res_groups.keys(), key=q_sort):
+            res_files = res_groups[res]
+            if len(res_files) == 1:
+                # Single file link
+                string = f"get-{res_files[0]['msg_id'] * abs(client.db_channel.id)}"
+            else:
+                # Batch link for multiple parts of same quality
+                msg_ids = [f['msg_id'] for f in res_files]
+                string = f"get-{min(msg_ids) * abs(client.db_channel.id)}-{max(msg_ids) * abs(client.db_channel.id)}"
+
+            base64_string = await encode(string)
+            link = f"https://t.me/{bot_username}?start={base64_string}"
+            all_res_buttons.append(InlineKeyboardButton(f"{res.upper()}", url=link))
+
+        for i in range(0, len(all_res_buttons), 3):
+            buttons.append(all_res_buttons[i:i+3])
+
+        buttons.append([InlineKeyboardButton(" [ ʜᴏᴡ ᴛᴏ ᴅᴏᴡɴʟᴏᴀᴅ ] ", url=TUT_VID)])
+
+        target_chat = ONGOING_CHANNEL_ID # The ongoing channel
+        try:
+            await client.send_photo(
+                chat_id=target_chat,
+                photo=series['poster'],
+                caption=caption,
+                reply_markup=InlineKeyboardMarkup(buttons)
+            )
+
+            # Increment episode after posting
+            new_ep = int(series['current_ep']) + 1
+            total_eps = int(series['total_eps'])
+
+            if new_ep > total_eps:
+                # Series completed! Remove from ongoing list
+                await db.del_ongoing(series['title'])
+                await query.answer(f"Series {series['title']} completed and removed from list!", show_alert=True)
+                # Redirect to ongoing_list_0 logic
+                all_ongoing = await db.get_all_ongoing()
+                if not all_ongoing:
+                    return await query.message.edit_text("<b>No ongoing series found!</b>",
+                                                        reply_markup=InlineKeyboardMarkup([[InlineKeyboardButton("ᴄʟᴏsᴇ", callback_data="close")]]))
+                page = 0
+                per_page = 10
+                total_pages = (len(all_ongoing) + per_page - 1) // per_page
+                start = page * per_page
+                end = start + per_page
+                buttons = []
+                for series_item in all_ongoing[start:end]:
+                    buttons.append([InlineKeyboardButton(f"📺 {series_item['title']} (S{series_item['season']} E{series_item['current_ep']})",
+                                                         callback_data=f"manage_ongoing_{series_item['title'][:20]}")])
+                nav = []
+                if page < total_pages - 1:
+                    nav.append(InlineKeyboardButton("Nᴇxᴛ ▶️", callback_data=f"ongoing_list_{page+1}"))
+                if nav: buttons.append(nav)
+                buttons.append([InlineKeyboardButton("ᴄʟᴏsᴇ", callback_data="close")])
+                return await query.message.edit_text("<b>📺 Oɴɢᴏɪɴɢ Sᴇʀɪᴇs Mᴀɴᴀɢᴇᴍᴇɴᴛ</b>", reply_markup=InlineKeyboardMarkup(buttons))
+
+            await db.update_ongoing_ep(series['title'], str(new_ep))
+            await query.answer("Successfully posted and incremented episode!", show_alert=True)
+
+            # Refresh view manually to avoid infinite recursion
+            series['current_ep'] = str(new_ep)
+            text = (f"<b>📺 Mᴀɴᴀɢɪɴɢ: {series['title']}</b>\n\n"
+                    f"<b>Sᴇᴀsᴏɴ:</b> {series['season']}\n"
+                    f"<b>ᴄᴜʀʀᴇɴᴛ Eᴘɪsᴏᴅᴇ:</b> {series['current_ep']}\n"
+                    f"<b>Tᴏᴛᴀʟ Eᴘɪsᴏᴅᴇs:</b> {series['total_eps']}\n"
+                    f"<b>Lᴀɴɢᴜᴀɢᴇ:</b> {series['language']}\n"
+                    f"<b>Rᴇʟᴇᴀsᴇ Dᴀʏ:</b> {series['release_day']}")
+
+            buttons = [
+                [InlineKeyboardButton("📤 Pᴏsᴛ Nᴇxᴛ Eᴘɪsᴏᴅᴇ", callback_data=f"post_ongoing_{series['title'][:20]}")],
+                [InlineKeyboardButton("➕ Iɴᴄʀᴇᴍᴇɴᴛ Eᴘ", callback_data=f"inc_ep_{series['title'][:20]}"),
+                 InlineKeyboardButton("➖ Dᴇᴄʀᴇᴍᴇɴᴛ Eᴘ", callback_data=f"dec_ep_{series['title'][:20]}")],
+                [InlineKeyboardButton("‹ ʙᴀᴄᴋ", callback_data="ongoing_list_0"),
+                 InlineKeyboardButton("ᴄʟᴏsᴇ", callback_data="close")]
+            ]
+            await query.message.edit_text(text, reply_markup=InlineKeyboardMarkup(buttons))
+        except Exception as e:
+            await query.answer(f"Failed to post: {str(e)}", show_alert=True)
+
     elif data == "fsub_back":
         channels = await db.show_channels()
         buttons = []
@@ -216,6 +522,118 @@ async def cb_handler(client: Bot, query: CallbackQuery):
             "sᴇʟᴇᴄᴛ ᴀ ᴄʜᴀɴɴᴇʟ ᴛᴏ ᴛᴏɢɢʟᴇ ɪᴛs ғᴏʀᴄᴇ-sᴜʙ ᴍᴏᴅᴇ:",
             reply_markup=InlineKeyboardMarkup(buttons)
         )
+
+    elif data == "toggle_shortlink":
+        if query.from_user.id != OWNER_ID:
+            return await query.answer("Only Owner can access this!", show_alert=True)
+        settings = await db.get_settings()
+        new_status = not settings['is_shortlink']
+
+        if new_status and (not settings['shortlink_url'] or not settings['shortlink_api']):
+            return await query.answer("Please set Shortlink URL and API first!", show_alert=True)
+
+        await db.update_setting('is_shortlink', new_status)
+        await query.answer(f"Shortlink status set to {'ON' if new_status else 'OFF'}")
+
+        # Refresh the UI
+        settings = await db.get_settings()
+        text = (
+            "<b>🛠 Oᴡɴᴇʀ Sᴇᴛᴛɪɴɢs</b>\n\n"
+            f"<b>Sʜᴏʀᴛʟɪɴᴋ Uʀʟ:</b> <code>{settings['shortlink_url']}</code>\n"
+            f"<b>Sʜᴏʀᴛʟɪɴᴋ Aᴘɪ:</b> <code>{settings['shortlink_api']}</code>\n"
+            f"<b>Sʜᴏʀᴛʟɪɴᴋ Sᴛᴀᴛᴜs:</b> {'ON' if settings['is_shortlink'] else 'OFF'}\n"
+            f"<b>Pʀᴏᴛᴇᴄᴛ Cᴏɴᴛᴇɴᴛ:</b> {'ON' if settings['protect_content'] else 'OFF'}\n\n"
+            "<i>Use /set_url to change URL and /set_api to change API.</i>"
+        )
+        buttons = [
+            [
+                InlineKeyboardButton(f"Sʜᴏʀᴛʟɪɴᴋ: {'ON' if settings['is_shortlink'] else 'OFF'}", callback_data="toggle_shortlink"),
+                InlineKeyboardButton(f"Pʀᴏᴛᴇᴄᴛ: {'ON' if settings['protect_content'] else 'OFF'}", callback_data="toggle_protect")
+            ],
+            [
+                InlineKeyboardButton("Tᴇsᴛ Sʜᴏʀᴛʟɪɴᴋ", callback_data="test_shortlink"),
+                InlineKeyboardButton("Cʟᴏsᴇ", callback_data="close")
+            ]
+        ]
+        await query.message.edit_caption(caption=text, reply_markup=InlineKeyboardMarkup(buttons))
+
+    elif data == "toggle_protect":
+        if query.from_user.id != OWNER_ID:
+            return await query.answer("Only Owner can access this!", show_alert=True)
+        settings = await db.get_settings()
+        new_status = not settings['protect_content']
+        await db.update_setting('protect_content', new_status)
+        await query.answer(f"Protect Content status set to {'ON' if new_status else 'OFF'}")
+
+        # Refresh the UI
+        settings = await db.get_settings()
+        text = (
+            "<b>🛠 Oᴡɴᴇʀ Sᴇᴛᴛɪɴɢs</b>\n\n"
+            f"<b>Sʜᴏʀᴛʟɪɴᴋ Uʀʟ:</b> <code>{settings['shortlink_url']}</code>\n"
+            f"<b>Sʜᴏʀᴛʟɪɴᴋ Aᴘɪ:</b> <code>{settings['shortlink_api']}</code>\n"
+            f"<b>Sʜᴏʀᴛʟɪɴᴋ Sᴛᴀᴛᴜs:</b> {'ON' if settings['is_shortlink'] else 'OFF'}\n"
+            f"<b>Pʀᴏᴛᴇᴄᴛ Cᴏɴᴛᴇɴᴛ:</b> {'ON' if settings['protect_content'] else 'OFF'}\n\n"
+            "<i>Use /set_url to change URL and /set_api to change API.</i>"
+        )
+        buttons = [
+            [
+                InlineKeyboardButton(f"Sʜᴏʀᴛʟɪɴᴋ: {'ON' if settings['is_shortlink'] else 'OFF'}", callback_data="toggle_shortlink"),
+                InlineKeyboardButton(f"Pʀᴏᴛᴇᴄᴛ: {'ON' if settings['protect_content'] else 'OFF'}", callback_data="toggle_protect")
+            ],
+            [
+                InlineKeyboardButton("Tᴇsᴛ Sʜᴏʀᴛʟɪɴᴋ", callback_data="test_shortlink"),
+                InlineKeyboardButton("Cʟᴏsᴇ", callback_data="close")
+            ]
+        ]
+        await query.message.edit_caption(caption=text, reply_markup=InlineKeyboardMarkup(buttons))
+
+    elif data == "test_shortlink":
+        if query.from_user.id != OWNER_ID:
+            return await query.answer("Only Owner can access this!", show_alert=True)
+        settings = await db.get_settings()
+        if not settings['shortlink_url'] or not settings['shortlink_api']:
+            return await query.answer("Please set Shortlink URL and API first!", show_alert=True)
+
+        from helper_func import get_shortlink
+        try:
+            sample_link = "https://www.google.com"
+            short = await get_shortlink(settings['shortlink_url'], settings['shortlink_api'], sample_link)
+
+            text = (
+                "<b>✅ sʜᴏʀᴛɴᴇʀ ᴛᴇsᴛ sᴜᴄᴄᴇssғᴜʟ!</b>\n\n"
+                f"<b>ᴛᴇsᴛ ᴜʀʟ:</b> <code>{sample_link}</code>\n"
+                f"<b>sʜᴏʀᴛ ᴜʀʟ:</b> <code>{short}</code>\n"
+                f"<b>ʀᴇsᴘᴏɴsᴇ:</b> success"
+            )
+            buttons = [[InlineKeyboardButton("◀ ʙᴀᴄᴋ", callback_data="back_settings")]]
+            await query.message.edit_caption(caption=text, reply_markup=InlineKeyboardMarkup(buttons))
+
+        except Exception as e:
+            await query.answer(f"Test Failed: {str(e)}", show_alert=True)
+
+    elif data == "back_settings":
+        if query.from_user.id != OWNER_ID:
+            return await query.answer("Only Owner can access this!", show_alert=True)
+        settings = await db.get_settings()
+        text = (
+            "<b>🛠 Oᴡɴᴇʀ Sᴇᴛᴛɪɴɢs</b>\n\n"
+            f"<b>Sʜᴏʀᴛʟɪɴᴋ Uʀʟ:</b> <code>{settings['shortlink_url']}</code>\n"
+            f"<b>Sʜᴏʀᴛʟɪɴᴋ Aᴘɪ:</b> <code>{settings['shortlink_api']}</code>\n"
+            f"<b>Sʜᴏʀᴛʟɪɴᴋ Sᴛᴀᴛᴜs:</b> {'ON' if settings['is_shortlink'] else 'OFF'}\n"
+            f"<b>Pʀᴏᴛᴇᴄᴛ Cᴏɴᴛᴇɴᴛ:</b> {'ON' if settings['protect_content'] else 'OFF'}\n\n"
+            "<i>Use /set_url to change URL and /set_api to change API.</i>"
+        )
+        buttons = [
+            [
+                InlineKeyboardButton(f"Sʜᴏʀᴛʟɪɴᴋ: {'ON' if settings['is_shortlink'] else 'OFF'}", callback_data="toggle_shortlink"),
+                InlineKeyboardButton(f"Pʀᴏᴛᴇᴄᴛ: {'ON' if settings['protect_content'] else 'OFF'}", callback_data="toggle_protect")
+            ],
+            [
+                InlineKeyboardButton("Tᴇsᴛ Sʜᴏʀᴛʟɪɴᴋ", callback_data="test_shortlink"),
+                InlineKeyboardButton("Cʟᴏsᴇ", callback_data="close")
+            ]
+        ]
+        await query.message.edit_caption(caption=text, reply_markup=InlineKeyboardMarkup(buttons))
 
 
 # Don't Remove Credit @CodeFlix_Bots, @rohit_1888

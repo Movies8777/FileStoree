@@ -101,6 +101,10 @@ class Bot(Client):
         self.username = usr_bot_me.username
         self.LOGGER(__name__).info(f"Bot Running..! Made by @Movies8777")   
 
+        # Start Scheduler Loop
+        from plugins.scheduler import scheduler_loop
+        asyncio.create_task(scheduler_loop(self))
+
         # Start Web Server
         app = web.AppRunner(await web_server())
         await app.setup()

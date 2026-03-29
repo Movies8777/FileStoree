@@ -24,8 +24,11 @@ API_HASH = os.environ.get("API_HASH", "") #Your API Hash from my.telegram.org
 #--------------------------------------------
 
 CHANNEL_ID = int(os.environ.get("CHANNEL_ID", "-1003646933017")) #Your db channel Id
+POST_CHANNEL_ID = int(os.environ.get("POST_CHANNEL_ID", "-1003524332911"))
+ANIME_CHANNEL_ID = int(os.environ.get("ANIME_CHANNEL_ID", "-1002109725918"))
 OWNER = os.environ.get("OWNER", "♚𝖧υηтєʀ⚰️") # Owner username without @
 OWNER_ID = int(os.environ.get("OWNER_ID", "8435672368")) # Owner id
+ONGOING_CHANNEL_ID = int(os.environ.get("ONGOING_CHANNEL_ID", "-1002096101886"))
 #--------------------------------------------
 PORT = os.environ.get("PORT", "8001")
 #--------------------------------------------
@@ -36,8 +39,8 @@ FSUB_LINK_EXPIRY = int(os.getenv("FSUB_LINK_EXPIRY", "120"))  # 0 means no expir
 BAN_SUPPORT = os.environ.get("BAN_SUPPORT", "https://t.me/Spicylinebun")
 TG_BOT_WORKERS = int(os.environ.get("TG_BOT_WORKERS", "200"))
 #--------------------------------------------
-START_PIC = os.environ.get("START_PIC", "https://i.postimg.cc/4yCmP76g/chdyt.jpg")
-FORCE_PIC = os.environ.get("FORCE_PIC", "https://i.postimg.cc/mkwB9tVr/hmhg.jpg")
+START_PIC = os.environ.get("START_PIC", "https://telegra.ph/file/97376df3c04de472cccc3-873dfc1d5592d694fe.jpg")
+FORCE_PIC = os.environ.get("FORCE_PIC", "https://telegra.ph/file/97376df3c04de472cccc3-873dfc1d5592d694fe.jpg")
 
 #--------------------------------------------
 SHORTLINK_URL = os.environ.get("SHORTLINK_URL", "")
@@ -49,38 +52,53 @@ TUT_VID = os.environ.get("TUT_VID","https://t.me/HowToVerifyy")
 REDIRECT_DOMAIN = os.environ.get("REDIRECT_DOMAIN","https://urlmsk.onrender.com")
 #--------------------------------------------
 HELP_TXT = "<b><blockquote>ᴛʜɪs ɪs ᴀɴ ғɪʟᴇ ᴛᴏ ʟɪɴᴋ ʙᴏᴛ ᴡᴏʀᴋ ғᴏʀ @Spicylinebun\n\n❏ ʙᴏᴛ ᴄᴏᴍᴍᴀɴᴅs\n├/start : sᴛᴀʀᴛ ᴛʜᴇ ʙᴏᴛ\n├/about : ᴏᴜʀ Iɴғᴏʀᴍᴀᴛɪᴏɴ\n└/help : ʜᴇʟᴘ ʀᴇʟᴀᴛᴇᴅ ʙᴏᴛ\n\n sɪᴍᴘʟʏ ᴄʟɪᴄᴋ ᴏɴ ʟɪɴᴋ ᴀɴᴅ sᴛᴀʀᴛ ᴛʜᴇ ʙᴏᴛ ᴊᴏɪɴ ʙᴏᴛʜ ᴄʜᴀɴɴᴇʟs ᴀɴᴅ ᴛʀʏ ᴀɢᴀɪɴ ᴛʜᴀᴛs ɪᴛ.....!\n\n ᴅᴇᴠᴇʟᴏᴘᴇᴅ ʙʏ <a href=https://t.me/Spicylinebun>𝖣𝖾𝖺𝗍𝗁</a></blockquote></b>"
-ABOUT_TXT = "<b><blockquote>◈ ᴄʀᴇᴀᴛᴏʀ: <a href=https://t.me/Spicylinebun>𝖫𝗈𝗌𝗍</a>\n◈ ꜰᴏᴜɴᴅᴇʀ ᴏꜰ : <a href=https://t.me/+otXaE3-eu7MzNjU9>𝖫𝗈𝗌𝗍 ɴᴇᴛᴡᴏʀᴋ</a>\n◈ нєηαтєє ᴄʜᴀɴɴᴇʟ : <a href=https://t.me/+1epnsIzoCx43YTk1>нєηαтєє</a>\n◈ sᴇʀɪᴇs ᴄʜᴀɴɴᴇʟ : <a href=https://t.me/+Pf6-2PAsrAczMzQ1>ᴡᴇʙsᴇʀɪᴇs</a>\n◈ ᴅᴇᴠᴇʟᴏᴘᴇʀ : <a href=https://t.me/Goathunterr>♚𝖧υηтєʀ⚰️ </a></blockquote></b>"
+ABOUT_TXT = "<b><blockquote>◈ ᴄʀᴇᴀᴛᴏʀ: <a href=https://t.me/Spicylinebun>𝖫𝗈𝗌ᴛ</a>\n◈ ꜰᴏᴜɴᴅᴇʀ ᴏꜰ : <a href=https://t.me/+otXaE3-eu7MzNjU9>𝖫𝗈𝗌ᴛ ɴᴇᴛᴡᴏʀᴋ</a>\n◈ нєηαтєє ᴄʜᴀɴɴᴇʟ : <a href=https://t.me/+1epnsIzoCx43YTk1>нєηαтєє</a>\n◈ sᴇʀɪᴇs ᴄʜᴀɴɴᴇʟ : <a href=https://t.me/+Pf6-2PAsrAczMzQ1>ᴡᴇʙsᴇʀɪᴇs</a>\n◈ ᴅᴇᴠᴇʟᴏᴘᴇʀ : <a href=https://t.me/Goathunterr>♚𝖧υηтєʀ⚰️ </a></blockquote></b>"
 #--------------------------------------------
 #--------------------------------------------
 START_MSG = os.environ.get("START_MESSAGE", "<b>ʜᴇʟʟᴏ {first}\n\n<blockquote> ɪ ᴀᴍ ғɪʟᴇ sᴛᴏʀᴇ ʙᴏᴛ, ɪ ᴄᴀɴ sᴛᴏʀᴇ ᴘʀɪᴠᴀᴛᴇ ғɪʟᴇs ɪɴ sᴘᴇᴄɪғɪᴇᴅ ᴄʜᴀɴɴᴇʟ ᴀɴᴅ ᴏᴛʜᴇʀ ᴜsᴇʀs ᴄᴀɴ ᴀᴄᴄᴇss ɪᴛ ғʀᴏᴍ sᴘᴇᴄɪᴀʟ ʟɪɴᴋ.</blockquote></b>")
 FORCE_MSG = os.environ.get("FORCE_SUB_MESSAGE", "ʜᴇʟʟᴏ {first}\n\n<b><blockquote>ᴊᴏɪɴ ᴏᴜʀ ᴄʜᴀɴɴᴇʟs ᴀɴᴅ ᴛʜᴇɴ ᴄʟɪᴄᴋ ᴏɴ ʀᴇʟᴏᴀᴅ button ᴛᴏ ɢᴇᴛ ʏᴏᴜʀ ʀᴇǫᴜᴇꜱᴛᴇᴅ ꜰɪʟᴇ.</b></blockquote>")
 
-CMD_TXT = """<blockquote><b>» ᴀᴅᴍɪɴ ᴄᴏᴍᴍᴀɴᴅs:</b></blockquote>
+CMD_TXT_1 = """<blockquote><b>» ʙᴏᴛ ᴍᴀɴᴀɢᴇᴍᴇɴᴛ:</b></blockquote>
 
-<b>›› /genlink (reply) :</b> ɢᴇɴᴇʀᴀᴛᴇ ʟɪɴᴋ ʙʏ ʀᴇᴘʟʏɪɴɢ ᴛᴏ ᴍᴇssᴀɢᴇ
-<b>›› /batch :</b> ɢᴇɴᴇʀᴀᴛᴇ ʙᴀᴛᴄʜ ʟɪɴᴋs
-<b>›› /dlt_time :</b> sᴇᴛ ᴀᴜᴛᴏ ᴅᴇʟᴇᴛᴇ ᴛɪᴍᴇ
-<b>›› /check_dlt_time :</b> ᴄʜᴇᴄᴋ ᴄᴜʀʀᴇɴᴛ ᴅᴇʟᴇᴛᴇ ᴛɪᴍᴇ
-<b>›› /dbroadcast :</b> ʙʀᴏᴀᴅᴄᴀsᴛ ᴅᴏᴄᴜᴍᴇɴᴛ / ᴠɪᴅᴇᴏ
-<b>›› /ban :</b> ʙᴀɴ ᴀ ᴜꜱᴇʀ
-<b>›› /unban :</b> ᴜɴʙᴀɴ ᴀ ᴜꜱᴇʀ
-<b>›› /banlist :</b> ɢᴇᴛ ʟɪsᴛ ᴏꜰ ʙᴀɴɴᴇᴅ ᴜꜱᴇʀs
-<b>›› /addchnl :</b> ᴀᴅᴅ ꜰᴏʀᴄᴇ sᴜʙ ᴄʜᴀɴɴᴇʟ
-<b>›› /delchnl :</b> ʀᴇᴍᴏᴠᴇ ꜰᴏʀᴄᴇ sᴜʙ ᴄʜᴀɴɴᴇʟ
-<b>›› /listchnl :</b> ᴠɪᴇᴡ ᴀᴅᴅᴇᴅ ᴄʜᴀɴɴᴇʟs
-<b>›› /fsub_mode :</b> ᴛᴏɢɢʟᴇ ꜰᴏʀᴄᴇ sᴜʙ ᴍᴏᴅᴇ
-<b>›› /pbroadcast :</b> sᴇɴᴅ ᴘʜᴏᴛᴏ ᴛᴏ ᴀʟʟ ᴜꜱᴇʀs
-<b>›› /add_admin :</b> ᴀᴅᴅ ᴀɴ ᴀᴅᴍɪɴ
-<b>›› /deladmin :</b> ʀᴇᴍᴏᴠᴇ ᴀɴ ᴀᴅᴍɪɴ
-<b>›› /admins :</b> ɢᴇᴛ ʟɪsᴛ ᴏꜰ ᴀᴅᴍɪɴs
-<b>›› /index :</b> ʙᴜʟᴋ ɪɴᴅᴇx ᴄʜᴀɴɴᴇʟ ᴘᴏsᴛs
-<b>›› /addpremium :</b> ᴀᴅᴅ ᴀ ᴘʀᴇᴍɪᴜᴍ ᴜꜱᴇʀ
-<b>›› /premium_users :</b> ʟɪsᴛ ᴀʟʟ ᴘʀᴇᴍɪᴜᴍ ᴜꜱᴇʀs
-<b>›› /remove_premium :</b> ʀᴇᴍᴏᴠᴇ ᴘʀᴇᴍɪᴜᴍ ꜰʀᴏᴍ ᴀ ᴜꜱᴇʀ
-<b>›› /myplan :</b> ᴄʜᴇᴄᴋ ʏᴏᴜʀ ᴘʀᴇᴍɪᴜᴍ sᴛᴀᴛᴜs
-<b>›› /stats :</b> ᴄʜᴇᴄᴋ ʙᴏᴛ ᴀɴᴅ ɪɴᴅᴇx sᴛᴀᴛs
-<b>›› /count :</b> ᴄᴏᴜɴᴛ ᴠᴇʀɪғɪᴄᴀᴛɪᴏɴs
-<b>›› /delreq :</b> Rᴇᴍᴏᴠᴇᴅ ʟᴇғᴛᴏᴠᴇʀ ɴᴏɴ-ʀᴇǫᴜᴇsᴛ ᴜsᴇʀs
+<b>› /stats :</b> sᴛᴀᴛs ᴀɴᴅ ɪɴᴅᴇx ɪɴғᴏ
+<b>› /dbroadcast :</b> sᴇɴᴅ ᴍᴇssᴀɢᴇ ᴛᴏ ᴀʟʟ
+<b>› /pbroadcast :</b> sᴇɴᴅ ᴘʜᴏᴛᴏ ᴛᴏ ᴀʟʟ
+<b>› /ban :</b> ʙᴀɴ ᴀ ᴜsᴇʀ
+<b>› /unban :</b> ᴜɴʙᴀɴ ᴀ ᴜsᴇʀ
+<b>› /banlist :</b> ʟɪsᴛ ᴏғ ʙᴀɴɴᴇᴅ ᴜsᴇʀs
+<b>› /addchnl :</b> ᴀᴅᴅ ғsᴜʙ ᴄʜᴀɴɴᴇʟ
+<b>› /delchnl :</b> ʀᴇᴍᴏᴠᴇ ғsᴜʙ ᴄʜᴀɴɴᴇʟ
+<b>› /listchnl :</b> ᴠɪᴇᴡ ғsᴜʙ ᴄʜᴀɴɴᴇʟs
+<b>› /fsub_mode :</b> ᴛᴏɢɢʟᴇ ғsᴜʙ ᴍᴏᴅᴇ
+<b>› /add_admin :</b> ᴀᴅᴅ ᴀ ɴᴇᴡ ᴀᴅᴍɪɴ
+<b>› /deladmin :</b> ʀᴇᴍᴏᴠᴇ ᴀɴ ᴀᴅᴍɪɴ
+<b>› /admins :</b> ʟɪsᴛ ᴏғ ᴀʟʟ ᴀᴅᴍɪɴs
+<b>› /settings :</b> ᴏᴡɴᴇʀ sᴇᴛᴛɪɴɢs
+<b>› /set_url :</b> sᴇᴛ sʜᴏʀᴛʟɪɴᴋ ᴜʀʟ
+<b>› /set_api :</b> sᴇᴛ sʜᴏʀᴛʟɪɴᴋ ᴀᴘɪ
+<b>› /addpremium :</b> ᴀᴅᴅ ᴘʀᴇᴍɪᴜᴍ ᴜsᴇʀ
+<b>› /premium_users :</b> ʟɪsᴛ ᴏғ ᴘʀᴇᴍɪᴜᴍs
+<b>› /remove_premium :</b> ʀᴇᴍᴏᴠᴇ ᴘʀᴇᴍɪᴜᴍ
+<b>› /count :</b> ᴠᴇʀɪғɪᴄᴀᴛɪᴏɴ ᴄᴏᴜɴᴛ
+<b>› /delreq :</b> ᴄʟᴇᴀɴ ᴜɴ-ʀᴇǫ ᴜsᴇʀs
+"""
+
+CMD_TXT_2 = """<blockquote><b>» ᴄᴏɴᴛᴇɴᴛ ᴍᴀɴᴀɢᴇᴍᴇɴᴛ:</b></blockquote>
+
+<b>› /index :</b> ʙᴜʟᴋ ɪɴᴅᴇx ᴄʜᴀɴɴᴇʟ
+<b>› /genlink :</b> ʀᴇᴘʟʏ ᴛᴏ ɢᴇɴ ʟɪɴᴋ
+<b>› /batch :</b> ɢᴇɴᴇʀᴀᴛᴇ ʙᴀᴛᴄʜ ʟɪɴᴋ
+<b>› /dlt_time :</b> sᴇᴛ ᴀᴜᴛᴏ-ᴅᴇʟᴇᴛᴇ ᴛɪᴍᴇ
+<b>› /check_dlt_time :</b> ᴄʜᴇᴄᴋ ᴅᴇʟᴇᴛᴇ ᴛɪᴍᴇ
+<b>› /add_ongoing :</b> ᴀᴅᴅ ᴏɴɢᴏɪɴɢ sᴇʀɪᴇs
+<b>› /ongoing :</b> ᴍᴀɴᴀɢᴇ ᴏɴɢᴏɪɴɢ
+<b>› /del_ongoing :</b> ʀᴇᴍᴏᴠᴇ ᴏɴɢᴏɪɴɢ
+<b>› /post :</b> ғᴏʀᴍᴀᴛᴛᴇᴅ ᴍᴏᴠɪᴇ/sᴇʀɪᴇs
+<b>› /animepost :</b> ғᴏʀᴍᴀᴛᴛᴇᴅ ᴀɴɪᴍᴇ
+<b>› /file_details :</b> ᴄʜᴇᴄᴋ ғɪʟᴇ ɪɴ ᴅʙ
+<b>› /del_index :</b> ᴅᴇʟᴇᴛᴇ ɪɴᴅᴇxᴇᴅ ғɪʟᴇs
+<b>› /postlist :</b> ᴀᴅᴅ sᴄʜᴇᴅᴜʟᴇᴅ ʟɪsᴛ
+<b>› /liststats :</b> sᴄʜᴇᴅᴜʟᴇᴅ ᴅᴀsʜʙᴏᴀʀᴅ
 """
 #--------------------------------------------
 CUSTOM_CAPTION = os.environ.get("CUSTOM_CAPTION", "<b>• ʙʏ @Spicylinebun</b>") #set your Custom Caption here, Keep None for Disable Custom Caption
@@ -94,7 +112,7 @@ USER_REPLY_TEXT = "ʙᴀᴋᴋᴀ ! ʏᴏᴜ ᴀʀᴇ ɴᴏᴛ ᴍʏ ꜱᴇɴᴘ
 
 #==========================(BUY PREMIUM)====================#
 
-OWNER_TAG = os.environ.get("OWNER_TAG", "𝖫𝗈𝗌𝗍")
+OWNER_TAG = os.environ.get("OWNER_TAG", "𝖫𝗈𝗌ᴛ")
 UPI_ID = os.environ.get("UPI_ID", "")
 QR_PIC = os.environ.get("QR_PIC", "https://image2url.com/images/1765293368028-10fbfce0-7b20-456f-b9eb-cc09ea0fdb22.jpg")
 SCREENSHOT_URL = os.environ.get("SCREENSHOT_URL", f"t.me/Goathunterr")
@@ -133,4 +151,3 @@ logging.getLogger("pyrogram").setLevel(logging.WARNING)
 
 def LOGGER(name: str) -> logging.Logger:
     return logging.getLogger(name)
-   

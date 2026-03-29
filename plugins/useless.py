@@ -23,18 +23,8 @@ from pyrogram.errors.exceptions.bad_request_400 import UserNotParticipant
 from pyrogram.errors import FloodWait, UserIsBlocked, InputUserDeactivated, UserNotParticipant
 from bot import Bot
 from config import *
-from helper_func import *
-from database.database import *
-
-#=====================================================================================##
-
-@Bot.on_message(filters.command('stats') & admin)
-async def stats(bot: Bot, message: Message):
-    now = datetime.now()
-    delta = now - bot.uptime
-    time = get_readable_time(delta.seconds)
-    await message.reply(BOT_STATS_TEXT.format(uptime=time))
-
+from helper_func import is_admin, get_readable_time, admin
+from database.database import db
 
 #=====================================================================================##
 

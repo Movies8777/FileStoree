@@ -21,7 +21,7 @@ from pyrogram.types import Message, InlineKeyboardMarkup, InlineKeyboardButton, 
 from pyrogram.errors.exceptions.bad_request_400 import UserNotParticipant, InviteHashEmpty, ChatAdminRequired, PeerIdInvalid, UserIsBlocked, InputUserDeactivated
 from bot import Bot
 from config import *
-from helper_func import *
+from helper_func import admin
 from database.database import *
 
 
@@ -147,6 +147,133 @@ async def get_admins(client: Client, message: Message):
 
     reply_markup = InlineKeyboardMarkup([[InlineKeyboardButton("ᴄʟᴏsᴇ", callback_data="close")]])
     await pro.edit(f"<b>⚡ Current Admin List:</b>\n\n{admin_list}", reply_markup=reply_markup)
+
+
+@Bot.on_message(filters.command('stats') & filters.private & admin)
+async def get_stats(client: Client, message: Message):
+    pro = await message.reply_photo(photo=START_PIC, caption="<b><i>ᴘʟᴇᴀsᴇ ᴡᴀɪᴛ..</i></b>", quote=True)
+
+    total_users = await db.total_users_count()
+    total_files = await db.total_files()
+    total_verify = await db.get_total_verify_count()
+    total_ongoing = await db.total_ongoing_count()
+
+    stats_msg = (
+        "<b>✅ ᴛᴏᴛᴀʟ sᴛᴀᴛɪsᴛɪᴄs!</b>\n\n"
+        f"<b>ᴛᴏᴛᴀʟ ғɪʟᴇs:</b> <code>{total_files}</code>\n"
+        f"<b>ᴛᴏᴛᴀʟ ᴜsᴇʀs:</b> <code>{total_users}</code>\n"
+        f"<b>ᴛᴏᴅᴀʏ ᴠᴇʀɪғɪᴇᴅ:</b> <code>{total_verify}</code>\n"
+        f"<b>ᴏɴɢᴏɪɴɢ sᴇʀɪᴇs:</b> <code>{total_ongoing}</code>"
+    )
+
+    reply_markup = InlineKeyboardMarkup([[InlineKeyboardButton("ᴄʟᴏsᴇ", callback_data="close")]])
+    await pro.edit_caption(caption=stats_msg, reply_markup=reply_markup)
+
+
+@Bot.on_message(filters.command('add_ongoing') & filters.private & admin)
+async def add_ongoing_series(client: Client, message: Message):
+    if not message.reply_to_message or not message.reply_to_message.photo:
+        return await message.reply_text("<b>Please reply to a photo with series details!</b>\n\n"
+                                       "<b>Format:</b>\n"
+                                       "<code>/add_ongoing Title | Season | Language | ReleaseDay | TotalEpisodes | StartingEpisode | Qualities(comma separated)</code>")
+
+    if len(message.command) < 2:
+        return await message.reply_text("<b>Invalid Format!</b>\n"
+                                       "Need details after the command.")
+
+    try:
+        data = message.text.split(None, 1)[1].split('|')
+        if len(data) < 6:
+            return await message.reply_text("<b>Invalid Format!</b>\n"
+                                           "Need at least 6 fields: Title, Season, Language, ReleaseDay, TotalEpisodes, StartingEpisode")
+
+        title = data[0].strip()
+        season = data[1].strip()
+        language = data[2].strip()
+        release_day = data[3].strip()
+        total_eps = data[4].strip()
+        starting_ep = data[5].strip()
+        qualities = data[6].strip() if len(data) > 6 else "720p, 1080p"
+
+        poster = message.reply_to_message.photo.file_id
+
+        await db.add_ongoing(title, season, language, release_day, total_eps, starting_ep, poster, qualities)
+        await message.reply_text(f"<b>✅ Successfully added ongoing series:</b>\n\n"
+                                f"<b>Title:</b> {title}\n"
+                                f"<b>Season:</b> {season}\n"
+                                f"<b>Language:</b> {language}\n"
+                                f"<b>Release Day:</b> {release_day}\n"
+                                f"<b>Total Episodes:</b> {total_eps}\n"
+                                f"<b>Current Episode:</b> {starting_ep}\n"
+                                f"<b>Qualities:</b> {qualities}")
+    except Exception as e:
+        await message.reply_text(f"<b>Error:</b> <code>{str(e)}</code>")
+
+@Bot.on_message(filters.command('ongoing') & filters.private & admin)
+async def list_ongoing(client: Client, message: Message):
+    all_ongoing = await db.get_all_ongoing()
+    if not all_ongoing:
+        return await message.reply_text("<b>No ongoing series found!</b>")
+
+    buttons = []
+    for series in all_ongoing:
+        buttons.append([InlineKeyboardButton(f"📺 {series['title']} (S{series['season']} E{series['current_ep']})",
+                                             callback_data=f"manage_ongoing_{series['title'][:20]}")])
+
+    buttons.append([InlineKeyboardButton("ᴄʟᴏsᴇ", callback_data="close")])
+    await message.reply_text("<b>📺 Oɴɢᴏɪɴɢ Sᴇʀɪᴇs Mᴀɴᴀɢᴇᴍᴇɴᴛ</b>",
+                             reply_markup=InlineKeyboardMarkup(buttons))
+
+@Bot.on_message(filters.command('del_ongoing') & filters.private & admin)
+async def delete_ongoing(client: Client, message: Message):
+    if len(message.command) < 2:
+        return await message.reply_text("<b>Usage: /del_ongoing {title}</b>")
+
+    title = message.text.split(None, 1)[1].strip()
+    series = await db.get_ongoing(title)
+    if not series:
+        # Try partial match if exact fails
+        all_ongoing = await db.get_all_ongoing()
+        for s in all_ongoing:
+            if title.lower() in s['title'].lower():
+                title = s['title']
+                series = s
+                break
+
+    if not series:
+        return await message.reply_text(f"<b>Series <code>{title}</code> not found!</b>")
+
+    await db.del_ongoing(title)
+    await message.reply_text(f"<b>✅ Deleted ongoing series:</b> <code>{title}</code>")
+
+
+@Bot.on_message(filters.command('file_details') & filters.private & admin)
+async def get_file_details(client: Client, message: Message):
+    if len(message.command) < 2:
+        return await message.reply_text("<b>Usage: /file_details {filename_or_query}</b>")
+
+    query = message.text.split(None, 1)[1]
+    pro = await message.reply("<b>Searching...</b>", quote=True)
+
+    files = await db.find_file(query)
+    if not files:
+        return await pro.edit("<b>No files found!</b>")
+
+    # Return details for the first matching file for brevity
+    file = files[0]
+
+    details = (
+        f"<b>📄 Fɪʟᴇ Dᴇᴛᴀɪʟs</b>\n\n"
+        f"<b>Nᴀᴍᴇ:</b> <code>{file['file_name']}</code>\n"
+        f"<b>Sɪᴢᴇ:</b> <code>{file['file_size']} bytes</code>\n"
+        f"<b>Tʏᴘᴇ:</b> <code>{file['file_type']}</code>\n"
+        f"<b>Msg ID:</b> <code>{file['msg_id']}</code>\n"
+        f"<b>Cᴀᴘᴛɪᴏɴ:</b>\n<blockquote>{file.get('caption', 'No Caption')}</blockquote>"
+    )
+
+    reply_markup = InlineKeyboardMarkup([[InlineKeyboardButton("ᴄʟᴏsᴇ", callback_data="close")]])
+    await pro.edit(details, reply_markup=reply_markup)
+
 
 # Don't Remove Credit @CodeFlix_Bots, @rohit_1888
 # Ask Doubt on telegram @CodeflixSupport

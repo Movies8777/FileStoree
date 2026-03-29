@@ -1,9 +1,8 @@
 #Codeflix_Botz
 #rohit_1888 on Tg
 
-import motor, asyncio
+import motor, asyncio, time
 import motor.motor_asyncio
-import time
 import pymongo, os
 from config import DB_URI, DB_NAME
 import logging
@@ -50,7 +49,10 @@ class Rohit:
         self.rqst_fsub_data = self.database['request_forcesub']
         self.rqst_fsub_Channel_data = self.database['request_forcesub_channel']
         self.file_data = self.database['files']
-        
+        self.ongoing_data = self.database['ongoing']
+        self.settings_data = self.database['settings']
+        self.sched_queue_data = self.database['scheduled_queue']
+        self.sched_config_data = self.database['scheduler_config']
 
 
     # USER DATA
@@ -66,6 +68,9 @@ class Rohit:
         user_docs = await self.user_data.find().to_list(length=None)
         user_ids = [doc['_id'] for doc in user_docs]
         return user_ids
+
+    async def total_users_count(self):
+        return await self.user_data.count_documents({})
 
     async def del_user(self, user_id: int):
         await self.user_data.delete_one({'_id': user_id})
@@ -265,30 +270,166 @@ class Rohit:
         return result[0]["total"] if result else 0
 
     # FILE INDEXING
-    async def add_file(self, file_name, file_size, file_type, file_id, msg_id):
+    async def add_file(self, file_name, file_size, file_type, file_id, msg_id, caption=None):
         file_dict = {
             'file_name': file_name,
             'file_size': file_size,
             'file_type': file_type,
             'file_id': file_id,
-            'msg_id': msg_id
+            'msg_id': msg_id,
+            'caption': caption
         }
-        # Check if already indexed (optional, but good for avoiding duplicates if re-indexing)
-        await self.file_data.update_one(
-            {'file_id': file_id},
-            {'$set': file_dict},
-            upsert=True
-        )
+        try:
+            await self.file_data.update_one(
+                {'file_id': file_id},
+                {'$set': file_dict},
+                upsert=True
+            )
+        except Exception as e:
+            logging.error(f"Failed to index {file_name}: {e}")
 
     async def find_file(self, query):
-        # Basic regex search
+        import re
+        # Split query into words and search for each word
+        query_words = query.split()
+        regex_pattern = "".join([f"(?=.*{re.escape(word)})" for word in query_words])
+
+        # Search in filename and caption with word-agnostic matching
         cursor = self.file_data.find({
-            'file_name': {'$regex': query, '$options': 'i'}
+            '$or': [
+                {'file_name': {'$regex': regex_pattern, '$options': 'i'}},
+                {'caption': {'$regex': regex_pattern, '$options': 'i'}}
+            ]
         })
         return await cursor.to_list(length=100)
 
     async def total_files(self):
         return await self.file_data.count_documents({})
+
+    async def delete_all_files(self):
+        return await self.file_data.delete_many({})
+
+    async def delete_specific_files(self, query):
+        import re
+        query_words = query.split()
+        regex_pattern = "".join([f"(?=.*{re.escape(word)})" for word in query_words])
+
+        return await self.file_data.delete_many({
+            '$or': [
+                {'file_name': {'$regex': regex_pattern, '$options': 'i'}},
+                {'caption': {'$regex': regex_pattern, '$options': 'i'}}
+            ]
+        })
+
+    # ONGOING SERIES DATA
+    async def add_ongoing(self, title, season, language, release_day, total_eps, current_ep, poster, qualities):
+        data = {
+            'title': title,
+            'season': season,
+            'language': language,
+            'release_day': release_day,
+            'total_eps': total_eps,
+            'current_ep': current_ep,
+            'poster': poster,
+            'qualities': qualities
+        }
+        await self.ongoing_data.update_one({'title': title}, {'$set': data}, upsert=True)
+
+    async def get_ongoing(self, title):
+        return await self.ongoing_data.find_one({'title': title})
+
+    async def update_ongoing_ep(self, title, new_ep):
+        await self.ongoing_data.update_one({'title': title}, {'$set': {'current_ep': new_ep}})
+
+    async def get_all_ongoing(self):
+        return await self.ongoing_data.find().to_list(length=None)
+
+    async def del_ongoing(self, title):
+        await self.ongoing_data.delete_one({'title': title})
+
+    async def total_ongoing_count(self):
+        return await self.ongoing_data.count_documents({})
+
+    # SETTINGS MANAGEMENT
+    async def get_settings(self):
+        from config import SHORTLINK_URL, SHORTLINK_API, PROTECT_CONTENT
+        default_settings = {
+            'shortlink_url': SHORTLINK_URL,
+            'shortlink_api': SHORTLINK_API,
+            'is_shortlink': True if (SHORTLINK_URL and SHORTLINK_API) else False,
+            'protect_content': PROTECT_CONTENT
+        }
+
+        settings = await self.settings_data.find_one({'_id': 'global_settings'})
+        if not settings:
+            await self.settings_data.insert_one({'_id': 'global_settings', 'value': default_settings})
+            return default_settings
+
+        # Merge saved settings with defaults to ensure all keys exist
+        saved_values = settings.get('value', {})
+        for key, val in default_settings.items():
+            if key not in saved_values:
+                saved_values[key] = val
+        return saved_values
+
+    async def update_setting(self, key, value):
+        settings = await self.get_settings()
+        settings[key] = value
+        await self.settings_data.update_one(
+            {'_id': 'global_settings'},
+            {'$set': {'value': settings}},
+            upsert=True
+        )
+
+    # SCHEDULER DATA
+    async def add_to_sched_queue(self, query):
+        await self.sched_queue_data.insert_one({
+            'query': query,
+            'added_at': time.time(),
+            'status': 'pending'
+        })
+
+    async def get_sched_queue(self):
+        return await self.sched_queue_data.find({'status': 'pending'}).sort('added_at', 1).to_list(length=None)
+
+    async def remove_from_sched_queue(self, query_id):
+        from bson.objectid import ObjectId
+        await self.sched_queue_data.delete_one({'_id': ObjectId(query_id)})
+
+    async def clear_sched_queue(self):
+        await self.sched_queue_data.delete_many({})
+
+    async def get_next_sched_item(self):
+        return await self.sched_queue_data.find_one_and_update(
+            {'status': 'pending'},
+            {'$set': {'status': 'processing'}},
+            sort=[('added_at', 1)]
+        )
+
+    async def mark_sched_done(self, query_id):
+        await self.sched_queue_data.update_one({'_id': query_id}, {'$set': {'status': 'done'}})
+
+    async def get_sched_config(self):
+        from config import POST_CHANNEL_ID
+        config = await self.sched_config_data.find_one({'_id': 'sched_config'})
+        if not config:
+            default = {
+                '_id': 'sched_config',
+                'is_active': False,
+                'interval': 10800, # 3 hours
+                'last_post_time': 0,
+                'target_channel': POST_CHANNEL_ID
+            }
+            await self.sched_config_data.insert_one(default)
+            return default
+        return config
+
+    async def update_sched_config(self, key, value):
+        await self.sched_config_data.update_one(
+            {'_id': 'sched_config'},
+            {'$set': {key: value}},
+            upsert=True
+        )
 
 
 db = Rohit(DB_URI, DB_NAME)

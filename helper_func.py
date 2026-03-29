@@ -53,28 +53,6 @@ async def check_admin(filter, client, update):
 # All rights reserved.
 #
 
-async def is_subscribed(client, user_id):
-    channel_ids = await db.show_channels()
-
-    if not channel_ids:
-        return True
-
-    if user_id == OWNER_ID:
-        return True
-
-    for cid in channel_ids:
-        if not await is_sub(client, user_id, cid):
-            # Retry once if join request might be processing
-            mode = await db.get_channel_mode(cid)
-            if mode == "on":
-                await asyncio.sleep(2)  # give time for @on_chat_join_request to process
-                if await is_sub(client, user_id, cid):
-                    continue
-            return False
-
-    return True
-
-
 # Don't Remove Credit @CodeFlix_Bots, @rohit_1888
 # Ask Doubt on telegram @CodeflixSupport
 #
@@ -110,6 +88,29 @@ async def is_sub(client, user_id, channel_id):
     except Exception as e:
         print(f"[!] Error in is_sub(): {e}")
         return False
+
+async def is_subscribed(client, user_id):
+    channel_ids = await db.show_channels()
+
+    if not channel_ids:
+        return True
+
+    if user_id == OWNER_ID:
+        return True
+
+    for cid in channel_ids:
+        if not await is_sub(client, user_id, cid):
+            # Retry once if join request might be processing
+            mode = await db.get_channel_mode(cid)
+            if mode == "on":
+                await asyncio.sleep(2)  # give time for @on_chat_join_request to process
+                if await is_sub(client, user_id, cid):
+                    continue
+            return False
+
+    return True
+
+# Removed duplicate is_sub below
 
 # Don't Remove Credit @CodeFlix_Bots, @rohit_1888
 # Ask Doubt on telegram @CodeflixSupport
@@ -166,20 +167,32 @@ async def get_message_id(client, message):
                 return message.forward_origin.message_id
         return 0
     elif message.text:
-        pattern = r"https://t.me/(?:c/)?(.*)/(\d+)"
-        matches = re.match(pattern,message.text)
+        # Handles:
+        # https://t.me/c/123456789/10
+        # https://t.me/username/10
+        # https://t.me/c/123456789/10?single
+        pattern = r"https://t.me/(?:c/)?([^/?\s]+)/(\d+)"
+        matches = re.search(pattern, message.text)
         if not matches:
             return 0
+
         channel_id = matches.group(1)
         msg_id = int(matches.group(2))
+
         if channel_id.isdigit():
-            if f"-100{channel_id}" == str(client.db_channel.id):
+            # Private channel ID in link is usually without -100 prefix
+            full_channel_id = f"-100{channel_id}"
+            if full_channel_id == str(client.db_channel.id):
                 return msg_id
         else:
             if channel_id == client.db_channel.username:
                 return msg_id
-    else:
-        return 0
+
+        # Also check if it's the exact database channel ID if it was provided directly
+        if str(channel_id) == str(client.db_channel.id).replace("-100", ""):
+            return msg_id
+
+    return 0
 
 
 def get_readable_time(seconds: int) -> str:
@@ -231,13 +244,51 @@ async def get_shortlink(url, api, link):
     link = await shortzy.convert(link)
     return link
 
+async def subscribed_filter(filter, client, update):
+    if not update.from_user:
+        return False
+    return await is_subscribed(client, update.from_user.id)
 
-subscribed = filters.create(is_subscribed)
+subscribed = filters.create(subscribed_filter)
 admin = filters.create(check_admin)
 
 async def wrap_with_redirect(short_url):
     encoded = await encode(short_url)
     return f"{REDIRECT_DOMAIN}/?r={encoded}"
+
+def clean_title(title):
+    # Strip Telegram handles (e.g., @Codeflix_Bots)
+    title = re.sub(r'@\w+', '', title)
+
+    # Strip common quality, codec, and release tags
+    tags = [
+        r'\d{3,4}p', r'\d[kK]', r'x26[45]', r'HEVC', r'10bit', r'HDR(?:ip)?',
+        r'Bluray', r'Blu-ray', r'WEB-DL', r'Webrip', r'WEBDL', r'DVDRip', r'BDRip', r'BRRip',
+        r'Dual Audio', r'Multi-Audio', r'Multi', r'Hindi', r'English', r'ESub', r'MSub',
+        r'HDCAM', r'S-Print', r'Pre-DVDRip', r'TS', r'HC', r'WEB', r'HDTV', r'60fps'
+    ]
+    for tag in tags:
+        title = re.sub(rf'\b{tag}\b', '', title, flags=re.IGNORECASE)
+
+    # Strip year (19xx or 20xx)
+    title = re.sub(r'\(?(19|20)\d{2}\)?', '', title)
+
+    # Strip season/episode tags (S01, E01, EP01, Season 1, Episode 1)
+    title = re.sub(r'(S\d+|E\d+|EP\d+|Season\s?\d+|Episode\s?\d+|ESub|MSub)', '', title, flags=re.IGNORECASE)
+
+    # Strip brackets and parentheses and their contents (e.g., [Dual Audio])
+    title = re.sub(r'\[.*?\]|\(.*?\)', '', title)
+
+    # Remove common separators and extra whitespace
+    title = re.sub(r'[|.\-_:]', ' ', title)
+    # Remove single characters left over (like 's' from 'Season')
+    title = re.sub(r'\b[a-zA-Z]\b', '', title)
+    # Remove common file extensions
+    title = re.sub(r'\b(mkv|mp4|avi|srt)\b', '', title, flags=re.IGNORECASE)
+    title = re.sub(r'\s+', ' ', title).strip()
+
+    return title
+
 
 #rohit_1888 on Tg :
 
